@@ -5,8 +5,19 @@ Es ist ein Menü vorhanden, ein normaler/geführter Modus und einen Quicky-Modus
 Der Webcamloader schreibt jede Handlung einer Kamera, die gedownloaded wird, in ein Projekt.
 Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
 
-Wird der normale/geführte Modus gestartet, bekommt man eine Projektnummer zugewiesen, dann werden nacheinander die Kamera-URL, Bezeichnung für dieses Projekt, Bildanzahl und Pause zwischen den Bildern abgefragt. Es wird mit einem einmaligen Bild-Download die URL der Kamera getestet. Dies sollte in der Regel keine Sekunde andauern. Danach erscheint eine abschließende Abfrage und es wird die theoretische Download-Dauer und die theoretische, fertige Größe des Projekts errechnet. Bestätigt man diese, beginnt das Script mit dem Download.
+Wird der normale/geführte Modus gestartet, bekommt man eine Projektnummer zugewiesen, dann werden nacheinander die Kamera-URL, Bezeichnung für dieses Projekt, Bildanzahl und Pause zwischen den Bildern abgefragt. Es erscheint eine abschließende Abfrage und es wird die theoretische Download-Dauer und die theoretische, fertige Größe des Projekts errechnet. Bestätigt man diese, beginnt das Script mit dem Download.
 Ist die Bildanzahl erreicht, beendet sich das Programm automatisch.
+
+Ist nun ein Projekt erstellt, kann man dieses in ein Timelapse-Video umwandeln. Nach Eingabe der Projektnummer und der 'Frames per second' erscheint nun wieder eine abschließende Abfrage mit theoretischen Errechnungen der Videolänge. Danach erfolgt eine Visualisierung dessen.
+
+Im zuge dessen lassen sich auch Projekte archivieren oder importieren, z. B. zur allgemeinen Weitergabe.
+
+
+Der Quicky-Modus beinhaltet eine vom Anwender selbstständige, nicht geführte Eingabe aller relevanten Angaben. Dies erfolgt direkt beim Aufruf des Scripts in Form von Variablen.
+./webcamloader.sh quicky URL "Name" Bildanzahl Pause
+Bitte beachten, dass jede mit Leerzeichen getrennte Eingabe eine eigene Variabel ist. Sollte der Name Leerzeichen enthalten, so ist dieser in Anführungszeichen zu setzen. In diesem Fall ist beginnend mit $2 die URL einzugeben, in $3 den Namen, in $4 die Bildanzahl und in $5 die Pause zwischen den Bildern in Sekunden.
+Nach Start erscheint eine abschließende Abfrage und es wird die theoretische Download-Dauer und die theoretische, fertige Größe des Projekts errechnet. Bestätigt man diese, beginnt das Script mit dem Download. Mit Erreichen der Bildanzahl endet auch hier das Programm automatisch.
+
 
 Alle mit diesem Bash-File zusammenhängende Config-Files werden ausgelagert nach /home/$Benutzer/script-data/webcamloader.
 
