@@ -2,10 +2,12 @@
 
 (Linux Debian/Ubuntu) - Terminal/Server
 
-**Der Webcamloader** ist ein Script, welches von Webcams egal welcher Art Bilder speichert. Weitergehend lässt sich mit dem Abschnitt _Video erstellen_ damit ein Timelapse-Video erstellen.
+**Der Webcamloader** ist ein Script, welches von Webcams egal welcher Art Bilder speichern kann. Weitergehend lässt sich mit dem Abschnitt _Video erstellen_ damit ein Timelapse-Video erstellen.
 Es ist ein Menü vorhanden, ein normaler/geführter Modus und einen Quicky-Modus, der nach Eingabe der Variablen sofort mit der Arbeit beginnt.
 Der Webcamloader schreibt jede Handlung einer Kamera, die gedownloaded wird, in ein Projekt.
 Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
+
+Es ist auf IDs aufgebaut, statt auf Namen. Jedes Ausführen mit Download wird in einer Projekt-ID, beginnend mit 100, gespeichert.
 
 Beim blanken Aufruf via ./webcamloader.sh erscheint folgende Hauptmenü-Struktur:
 
@@ -52,15 +54,51 @@ Theoretisch fertig: am 06.04.24 um 16:11 Uhr.
 02.04.24 18:36:27 :: Bild 3603 von 7000 wird erstellt...
 ```
 
-Ist nun ein Projekt erstellt, kann man dieses in ein Timelapse-Video umwandeln. Nach Eingabe der Projektnummer und der 'Frames per second' erscheint nun wieder eine abschließende Abfrage mit theoretischen Errechnungen der Videolänge. Danach erfolgt eine Visualisierung dessen.
+Wenn Projekte fertig sind und man im Hauptmenü den Punkt 2 _Fertige Projekte_ anwählt, werden alle fertigen Projekte aufgelistet.
 
+```
+W E B C A M L O A D E R
+
+
+Menü 2.1: Fertige Projekte
+
+160 - Aufgelistete Projekte - Bildanzahl: xy - Pause: z
+...
+...
+
+Projektnummer zur weiteren Bearbeitung:
+```
+
+Jetzt kann man anhand den Projektnummern die Projekte anvisieren und weitere Maßnahmen ergreifen.
+Auf diese Weise lässt sich mit Hilfe von [ffmpeg], welches auf dem System installiert sein muss, ein Video erstellen.
+
+Es wird dann nach den FPS gefragt und es gibt auch hier wieder eine Zusammenfassung mit Aufnahmedatum und theoretischer Länge des Videos.
+
+```
+Wieviel FPS (Frames per Second) soll das Video haben?: 2
+2 FPS.
+
+- ZUSAMMENFASSUNG -
+
+ID:            188
+Name:          Test
+Bilderanzahl:  10
+FPS:           2
+Videolänge:    5 Sekunden
+Aufnahmedatum: 02.04.24
+
+
+OK? >> ENTER
+```
 
 **Der Quicky-Modus** beinhaltet eine vom Anwender selbstständige, nicht geführte Eingabe aller relevanten Angaben. Dies erfolgt direkt beim Aufruf des Scripts in Form von Variablen.
 ./webcamloader.sh quicky URL "Name" Bildanzahl Pause E-Mail
 Bitte beachten, dass jede mit Leerzeichen getrennte Eingabe eine eigene Variabel ist. Sollte der Name Leerzeichen enthalten, so ist dieser in Anführungszeichen zu setzen. In diesem Fall ist beginnend mit $2 die URL einzugeben, in $3 den Namen, in $4 die Bildanzahl und in $5 die Pause zwischen den Bildern in Sekunden.
 Nach Start erscheint eine abschließende Abfrage und es wird die theoretische Download-Dauer und die theoretische, fertige Größe des Projekts errechnet. Bestätigt man diese, beginnt das Script mit dem Download. Mit Erreichen der Bildanzahl endet auch hier das Programm automatisch.
 
-Mit integriertem Updater, der bei neuerer Version auf dem Server direkt die Bash-File mit der neuen automatisch ersetzt.
+Mit integriertem Updater, der bei neuerer Version auf dem Server via _public.mariobeh.de_ direkt die Bash-File mit der neuen automatisch ersetzt.
+
+---
 
 Alle mit diesem Bash-File zusammenhängende Config-Files werden ausgelagert nach /home/$Benutzer/script-data/webcamloader.
 
@@ -74,6 +112,7 @@ Garantiert lauffähig auf Debian und Ubuntu und alle Zwischendistributionen (Xub
 **In this case, all output (echo) is extracted into a language file, making it possible to integrate unlimited languages.**
 
 ---
+
 ChatGPT beschreibt das Script folgendermaßen:
 
 Das Bash-Skript scheint eine Art Webcam-Loader oder -Downloader zu sein, der für bestimmte Überwachungskameras gedacht ist. Hier ist eine Zusammenfassung der Funktionalitäten:
