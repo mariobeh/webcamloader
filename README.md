@@ -8,10 +8,10 @@ Der Webcamloader schreibt jede Handlung einer Kamera, die gedownloaded wird, in 
 Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
 
 Im Startmenü zum blanken Aufruf via ./webcamloader.sh erscheint folgende Struktur:
-Willkommen! ••• Menü.
-1 - Geführter Modus
-2 - Fertige Projekte
-3 - Projekt abschließen
+>Willkommen! ••• Menü.
+>1 - Geführter Modus
+>2 - Fertige Projekte
+>3 - Projekt abschließen
 
 Im Geführtem Modus sammelt das Script notwendige Informationen wie Kamera-URL, Name, Bildanzahl, Pause zwischen den Bildern und optional eine E-Mail-Adresse zur Benachrichtigung wenn das Projekt beendet ist.
 Anschließend wird eine Informationstafel gezeigt, wie lange das Projekt theoretisch dauert und wie groß es sein wird. Außerdem wird geprüft, ob die Kamera Bilder liefert oder es ein Videostream ist. Dies wird wie folgt zusammengefasst:
