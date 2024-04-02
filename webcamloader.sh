@@ -1,971 +1,833 @@
 #!/bin/bash
 
+#	██    ██ ██████  ██████   █████  ████████ ███████ ██████  
+#	██    ██ ██   ██ ██   ██ ██   ██    ██    ██      ██   ██ 
+#	██    ██ ██████  ██   ██ ███████    ██    █████   ██████  
+#	██    ██ ██      ██   ██ ██   ██    ██    ██      ██   ██ 
+#	 ██████  ██      ██████  ██   ██    ██    ███████ ██   ██ 
+
+# Updater & Reverse Updater BEGINN
+if [ "$1" = "update" ]; then
+	scriptversion=2404021749
+	scriptname=$(basename "$0")
+	serverping="public.mariobeh.de"
+	web_ver="https://public.mariobeh.de/prv/scripte/$scriptname-version.txt"
+	web_mirror="https://public.mariobeh.de/prv/scripte/$scriptname"
+	int_vers_dat="/srv/web/prv/scripte/$scriptname-version.txt"
+	int_mirror="/srv/web/prv/scripte/$scriptname"
+	if [ -f "/srv/web/prv/scripte/$scriptname-version.txt" ]; then
+		int_vers_num=$(cat "/srv/web/prv/scripte/$scriptname-version.txt" | head -n1 | tail -n1)
+	fi
+	if [ -f ".keyvalid" ]; then
+		keyvalid=$(cat ".keyvalid" | head -n1 | tail -n1)
+	fi
+	
+	if [ ! "$2" = "valid" ]; then
+		if [ -f "opt/.keyfile" ] && [ ! "$2" = "valid" ]; then
+			passfile=$(cat "opt/.keyfile" | head -n1 | tail -n1)
+			read -p "Passkey: " -s passkeyunenc
+			passkey=$(echo -n "$passkeyunenc" | sha256sum | cut -d ' ' -f 1)
+			if ! [ "${#scriptversion}" -eq "10" ]; then
+				echo "Versionsnummer hat eine falsche Länge. Abbruch."
+				exit
+			fi
+			if [ "$passfile" = "$passkey" ]; then
+				if [ ! -f "$int_vers_dat" ]; then
+					clear
+					echo "Erstmaliges Reverse Update"
+					echo "Internes Reverse Update von $(basename "$0") wird vorbereitet:"
+					sleep 2
+					echo "Kopiere auf das Webverzeichnis..."
+					echo "$scriptversion" > "$int_vers_dat"
+					cp "$scriptname" "$int_mirror"
+					echo "Fertig."
+					exit
+				else
+					if [ "$scriptversion" -gt "$int_vers_num" ]; then
+						clear
+						echo "Internes Reverse Update von $(basename "$0") wird durchgeführt..."
+						sleep 2
+						echo "Aktualisiere Versionsnummer in der Versionsdatei"
+						echo "$scriptversion" > "$int_vers_dat"
+						sleep 0.5
+						echo "Kopiere aktualisiertes Script in das Downloadverzeichnis"
+						cp -f $0 "$int_mirror"
+						sleep 0.5
+						echo "Fertig."
+						exit
+					elif [ "$scriptversion" = "$int_vers_num" ]; then
+						echo ""
+						echo "Nichts zu updaten, Version aktuell."
+						exit
+					fi
+				fi
+			else
+				echo ""
+				echo "Falscher Passkey. Internes Reverse Update nicht möglich."
+				exit
+			fi
+		else
+			if nc -z -w 1 "$serverping" 443 2>/dev/null; then
+				wget "$web_ver" -q -O ".version"
+				if [ -f ".version" ]; then
+					serverversion=$(cat ".version" | head -n1 | tail -n1)
+					if [ "$serverversion" -gt "$scriptversion" ]; then
+						clear
+						echo "Eine neue Version von $scriptname ist verfügbar."
+						echo ""
+						echo "Diese Version: $scriptversion " #($(($(stat -c %s "$0") / 1024)) KB)"
+						echo "Neue Version:  $serverversion " #($(($(wget --spider "$web_mirror" 2>&1 | awk '/Length:/ {print $2}' | cut -d'(' -f1) / 1024)) KB)"
+						echo ""
+						echo "Script wird aktualisiert, bitte warten."
+						echo ""
+						sleep 3
+						echo "Download"
+						wget -q -N "$web_mirror"
+						sleep 0.5
+						echo "Fertig."
+						echo "Validiere Update..."
+						sleep 1
+						echo "  ↳ Zu Manipulationszwecken wird ein Schlüssel erstellt"
+						keyvalid=$(head -c 32 /dev/random | base64 | tr -d '+/=')
+						echo "$keyvalid" > ".keyvalid"
+						sleep 0.5
+						echo "  ↳ Starte Script neu, wende Schlüssel an"
+						$0 update valid $keyvalid
+						exit
+					else
+						echo "Kein Update erforderlich, Version aktuell."
+						rm ".version"
+						exit
+					fi
+				else
+					echo "Konnte Versionsdatei nicht herunterladen, Update fehlgeschlagen."
+					exit
+				fi
+			else
+				echo "Keine Verbindung zum Server, Update fehlgeschlagen."
+				exit
+			fi
+		fi
+	fi
+	if [ "$2" = "valid" ]; then
+		echo "  ↳ Überprüfe Schlüssel"
+		if [ "$3" = "$keyvalid" ]; then
+			echo "  ↳ Schlüssel OK"
+			rm ".keyvalid"
+			sleep 0.5
+			echo "  ↳ Überprüfe Update"
+			serverversion=$(cat ".version" | head -n1 | tail -n1)
+			if [ "$serverversion" = "$scriptversion" ]; then
+				sleep 0.5
+				echo "  ↳ Update erfolgreich abgeschlossen."
+			else
+				sleep 0.5
+				echo "   -- Serverversion: $serverversion"
+				echo "   -- Scriptversion: $scriptversion"
+				echo "  ↳ Update fehlgeschlagen."
+			fi
+			rm ".version"
+			exit
+		else
+			echo "Key falsch, Manipulation? Update kann nicht validiert werden."
+			exit
+		fi
+	fi
+fi
+# Updater & Reverse Updater ENDE
+
+#	 █████  ██      ██       ██████  ███████ ███    ███ ███████ ██ ███    ██ 
+#	██   ██ ██      ██      ██       ██      ████  ████ ██      ██ ████   ██ 
+#	███████ ██      ██      ██   ███ █████   ██ ████ ██ █████   ██ ██ ██  ██ 
+#	██   ██ ██      ██      ██    ██ ██      ██  ██  ██ ██      ██ ██  ██ ██ 
+#	██   ██ ███████ ███████  ██████  ███████ ██      ██ ███████ ██ ██   ████ 
+
 user=$(whoami)
 data="/home/$user/script-data/webcamloader"
-
-zeitstempel=$(date +"%Y-%m-%d")
-
-if [ "$1" = "quicky" ] && [ ! -z "$6" ]; then
-	x="$6"
-	zusammenfuhren="1"
-else
-	x=1
-fi
 
 if [ ! -d "$data" ]; then
 	mkdir -p "$data"
 fi
 
-# Updater & Reverse Updater BEGINN
-scriptversion=2211211716
-scriptname=webcamloader.sh
-serverping=public.mariobeh.de
-web_ver=https://public.mariobeh.de/prv/scripte/$scriptname-version.txt
-web_mirror=https://public.mariobeh.de/prv/scripte/$scriptname
-int_ver=/srv/web/prv/scripte/$scriptname-version.txt
-int_mirror=/srv/web/prv/scripte/$scriptname
-host=$(hostname)
-
-if ping -w 1 -c 1 "$serverping" > /dev/null; then
-	wget "$web_ver" -q -O "$data/version.txt"
-	if [ -f "$data/version.txt" ]; then
-		serverversion=$(cat "$data/version.txt" | head -n1 | tail -n1)
-		if [ "$serverversion" -gt "$scriptversion" ]; then
-			clear
-			echo "Eine neue Version von $scriptname ist verfügbar."
-			echo ""
-			echo "Deine Version: $scriptversion"
-			echo "Neue Version:  $serverversion"
-			echo ""
-			echo "Script wird automatisch aktualisiert, um immer das beste Erlebnis zu bieten."
-			echo ""
-			sleep 3
-			wget -q -N "$web_mirror"
-			echo "Fertig. Starte..."
-			sleep 2
-			$0
-			exit
-		else
-			ipweb=$(host public.mariobeh.de | grep -w address | cut -d ' ' -f 4) # IP vom Mirror-Server
-			ipext=$(wget -4qO - icanhazip.com) # IP vom Anschluss
-	
-			if [ "$user" = "mariobeh" ] && [ "$host" = "behserver" ] && [ "$ipweb" = "$ipext" ]; then
-				if [ ! -f "$int_ver" ]; then
-					clear
-					echo "Internes Reverse Update wird vorbereitet:"
-					echo "Kopiere auf das Webverzeichnis..."
-					echo "$scriptversion" > "$int_ver"
-					cp "$scriptname" "$int_mirror"
-					echo "Fertig."
-					sleep 2
-				elif [ "$scriptversion" -gt "$serverversion" ]; then
-					clear
-					echo "Internes Reverse Update wird durchgeführt..."
-					sleep 2
-					echo "$scriptversion" > "$int_ver"
-					cp -f $0 "$int_mirror"
-					wget "$web_ver" -q -O "$data/version.txt"
-					serverversion=$(cat "$data/version.txt" | head -n1 | tail -n1)
-					if [ "$serverversion" = "$scriptversion" ]; then
-						echo "Update erfolgreich abgeschlossen."
-					else
-						echo "Update fehlgeschlagen."
-					fi
-					sleep 2
-				fi
-			fi
-		fi
-		rm "$data/version.txt"
-	fi
+if [ ! -d "$data/exec-log" ]; then
+	mkdir -p "$data/exec-log"
 fi
-# Updater & Reverse Updater ENDE
 
 if [ ! -f "$data/config.txt" ]; then
-	sudo apt-get install zip tar screen ffmpeg -y
-	echo "100" > "$data/nummer.txt"
-	echo "Projekt-ID;Funktion;Datum;Uhrzeit;Bilderanzahl;Pause;Dauer;FPS;Name;URL" > "$data/Protokoll.csv"
-	echo "TestPing = 8.8.8.8" >> "$data/config.txt"
-	echo "Bilder = $data/Bilder #(Beispiel)" >> "$data/config.txt"
-	echo "" >> "$data/config.txt"
-	echo "warten = 10 # Pause in Sekunden, wenn Internet off oder Webcam-Server down" >> "$data/config.txt"
-	echo "testgroesse = 4096 # Größe in Bytes, was das Bild mindestens haben soll. Unter dieser Größe geht man von einem fehlerhaften Bild aus" >> "$data/config.txt"
-
-	clear
-	echo "Bitte Pfad eintragen in der Config, wo die Bilder gespeichert werden sollen!"
-	echo "Es wird empfohlen, dies auf einer HDD zu speichern, statt auf einer SSD."
 	echo ""
-	echo "Als Vorgabe/Beispiel ist der Bilder-Ordner hier: $data/Bilder."
-	echo "Damit sind Downloads nun grundsätzlich möglich."
-	sleep 5
-fi
+	echo "Der Webcamloader wird zum ersten Mal ausgeführt."
+	echo "Die Konfigurationsdatei wird erstellt..."
 
-intro=" ╚ WCL Version $scriptversion ╝" # zwei Einträge brauchen die Variabel
+	echo "[Config]" > "$data/config.txt"
+	echo "Projekt = 100 #Projektnummern - beginnend mit 100, kann geändert werden" >> "$data/config.txt"
+	echo "Offline warten = 10 #Sekunden, in denen gewartet wird, wenn die Kamera offline ist" >> "$data/config.txt"
+	echo "Testgrößenlimit = 4096 #Byte - Testgröße, die das Testbild mindestens haben soll, ehe es nicht als Bild identifiziert werden kann" >> "$data/config.txt"
 
-function intro {
-	clear
-	echo " ╚ WCL Version $scriptversion ╝"
+	read -p "Speicherpfad für das Arbeitsverzeichnis, in welchem Bilder und Videos erstellt werden: " pfad
 	echo ""
+
+	if [ -z "$pfad" ]; then
+		echo "Pfad = $data/Arbeit #Beispiel. Muss ein Pfad sein, in dem Bilder und Videos gespeichert werden" >> "$data/config.txt"
+	else
+		echo "Pfad = $pfad #Pfad, in dem Bilder und Videos gespeichert werden" >> "$data/config.txt"
+	fi
+
+	echo "Eingegebener Pfad wird erstellt, wenn noch nicht vorhanden: $pfad"
+
+	if [ ! -d "$pfad" ]; then
+		mkdir -p "$pfad"
+		echo "OK"
+	else
+		echo "Bereits vorhanden, nichts zu tun."
+	fi
+
 	echo ""
-}
+	echo "Folgende Pakete müssen installiert sein um einen reibungslosen Ablauf zu gewährleisten:"
+	echo "zip tar screen ffmpeg netcat-traditional"
+	echo "Dies ist eigenverantwortlich zu installieren. Das kann im Anschluss durchgeführt werden."
+	echo ""
+	read -p "OK (ENTER)"
 
-nummer=$(cat "$data/nummer.txt" | head -n1 | tail -n1)
-ping=$(grep -w TestPing "$data/config.txt" | cut -d ' ' -f 3)
-bilder=$(grep -w Bilder "$data/config.txt" | cut -d ' ' -f 3)
-lostwarten=$(grep -w warten "$data/config.txt" | cut -d ' ' -f 3)
-testgroesse=$(grep -w testgroesse "$data/config.txt" | cut -d ' ' -f 3)
-
-# VORÜBERGEHEND!
-if [ -z "$lostwarten" ] || [ -z "$testgroesse" ]; then
-	echo "" >> "$data/config.txt"
-	echo "warten = 10 # Pause in Sekunden, wenn Internet off oder Webcam-Server down" >> "$data/config.txt"
-	echo "testgroesse = 4096 # Größe in Bytes, was das Bild mindestens haben soll. Unter dieser Größe geht man von einem fehlerhaften Bild aus" >> "$data/config.txt"
-fi
-# VORÜBERGEHEND!
-
-if [ "$nummer" -ge "999" ] || [ "$nummer" -lt "100" ]; then
-	echo "100" > "$data/nummer.txt"
-	nummer="100"
-	echo "Laufende Nummer zurückgesetzt."
-	echo "Entweder waren die Projekte voll oder es wurde manipuliert."
-	echo "Das Script beginnt wieder bei $nummer".
-	echo "Dies hat auch Auswirkungen auf die Statistik!"
-	sleep 5
+	touch "$data/.installed"
 fi
 
-if [ ! -d "$bilder" ]; then
-	mkdir -p "$bilder"
+# Lese Werte aus Config ein
+projekt=$(grep -w "Projekt" "$data/config.txt" | cut -d '=' -f 2 | cut -d '#' -f 1 | tr -d ' ')
+pfad=$(grep -w "Pfad" "$data/config.txt" | cut -d '=' -f 2 | cut -d '#' -f 1 | tr -d ' ')
+offwarten=$(grep -w "Offline warten" "$data/config.txt" | cut -d '=' -f 2 | cut -d '#' -f 1 | tr -d ' ')
+testgroesse=$(grep -w "Testgrößenlimit" "$data/config.txt" | cut -d '=' -f 2 | cut -d '#' -f 1 | tr -d ' ')
+
+if [ ! -d "$pfad" ]; then
+	mkdir -p "$pfad" 2>/dev/null
+
+	# Befehl wiederholen, wenn DIR immernoch fehlt, dann Fehler
+	if [ ! -d "$pfad" ]; then
+		echo ""
+	    echo "Dateiberechtigungen fehlen, Webcamloader kann auf dem Zielverzeichnis \"$pfad\" nicht schreiben."
+		exit 1
+	fi
 fi
 
-if [ $(ls -A $bilder | wc -l) = "0" ]; then
+# Überprüfe, ob Projekt eine Nummer ist
+if [[ ! "$projekt" =~ ^[0-9]+$ ]]; then
+	echo "Fehler, Projekt ist keine Nummer!"
+	exit 1
+fi
+
+# Überprüfe, ob Arbeitsverzeichnis leer oder nicht
+if [ $(ls -A $pfad | wc -l) = "0" ]; then
 	aktiv="0"
 else
 	aktiv="1"
 fi
 
-#							88b           d88  88888888888  888b      88  88        88
-#							888b         d888  88           8888b     88  88        88
-#							88`8b       d8'88  88           88 `8b    88  88        88
-#							88 `8b     d8' 88  88aaaaa      88  `8b   88  88        88
-#							88  `8b   d8'  88  88"""""      88   `8b  88  88        88
-#							88   `8b d8'   88  88           88    `8b 88  88        88
-#							88    `888'    88  88           88     `8888  Y8a.    .a8P
-#							88     `8'     88  88888888888  88      `888   `"Y8888Y"' 
+#	███████ ██    ██ ███    ██ ██   ██ ████████ ██  ██████  ███    ██ 
+#	██      ██    ██ ████   ██ ██  ██     ██    ██ ██    ██ ████   ██ 
+#	█████   ██    ██ ██ ██  ██ █████      ██    ██ ██    ██ ██ ██  ██ 
+#	██      ██    ██ ██  ██ ██ ██  ██     ██    ██ ██    ██ ██  ██ ██ 
+#	██       ██████  ██   ████ ██   ██    ██    ██  ██████  ██   ████ 
 
-if [ -z "$1" ]; then
-	clear
-	echo "  W E B C A M L O A D E R"
-	echo "$intro"
-	echo ""
-	echo ""
-	echo "Willkommen zum Webcamloader [WCL]!"
-	echo "       Was ist zu tun?"
-	echo ""
-	echo ""
-	echo " 1 - Normaler Modus, geführt"
-	if [ "$aktiv" = "1" ]; then
-	echo " 2 - Video erstellen von einem Projekt"
-	fi
-	if [ "$aktiv" = "1" ]; then
-	echo " 3 - Ein Projekt in ein Archiv packen"
-	fi
-	echo " 4 - Informationen zum 'Quicky-Modus'"
-	echo " 5 - Ein Archiv integrieren"
-	if [ "$aktiv" = "1" ]; then
-	echo " 6 - Projekt-Ordner löschen"
-	fi
-	if [ "$aktiv" = "1" ]; then
-		echo " 7 - Speicherbedarf Bilderordner"
-	fi
-	echo " 8 - Statistik"
-	echo ""
-	echo ""
-	read -p "Deine Eingabe: " menu
-	echo ""
+function arbeit {
 
-	if [ "$menu" = "1" ]; then
-		echo "Okay, Normaler Modus."
-		sleep 2
-		$0 normal
-		exit
-	elif [ "$menu" = "2" ]; then
-		echo "Okay, Video erstellen."
-		sleep 2
-		$0 video
-		exit
-	elif [ "$menu" = "3" ]; then
-		echo "Okay, ein Archiv erstellen."
-		sleep 2
-		$0 archiv
-		exit
-	elif [ "$menu" = "4" ]; then
-		echo "Okay, Informationen zum Quicky-Modus."
-		sleep 2
-		clear
-		echo "$intro
+	pingcam=$(echo "$2" | grep -oP '^https?://\K[^:/]+')
+	portcam=$(echo "$2" | grep -oP ':\K[0-9]+')
 
-
- Der Quicky-Modus erlaubt dir, schnellstmöglich mit dem Download der Bilder zu beginnen.
- Der Einsatz ist denkbar einfach.
- Nach dem Script-Namen sind nur Argumente zu übergeben.
- ./script.sh Funktion arg1 arg2 arg3 arg4 arg5
- ./script.sh quicky URL Name Bilderanzahl Pausen
- 
- In der Praxis sieht mit einem Beispiel das Ganze so aus:
- 
- ./webcamloader.sh quicky http://video.pafunddu.de/webcam/paf_rathaus.jpg Pfaffenhofen 2000 10
- 
- --> Das heißt, der Webcamloader lädt 2000 Fotos im Abstand zu je 10 Sekunden mit dem Namen Pfaffenhofen
- 	von der Adresse http://video.pafunddu.de/webcam/paf_rathaus.jpg herunter.
- 	Dieser Vorgang kann im normalen Modus geführt eingegeben werden.
- 
- Auch Videos und Motion Pictures (MJPG) werden unterstützt.
- Hier dasselbe, Beispiel aus der Praxis:
- 
- ./webcamloader.sh quicky http://104.251.136.19:8080/mjpg/video.mjpg Pool 6000 30
- 
- --> Das heißt, der Webcamloader lädt 6000 Fotos im Abstand zu je 30 Sekunden mit dem Namen Pool von der
- 	Adresse http://104.251.136.19:8080/mjpg/video.mjpg herunter. Es ist derselbe Effekt wie bei den Bildern
- 	zu erwarten.
- 
- ACHTUNG: Sollte der Name der Webcam Leerzeichen enthalten, unbedingt in Anführungszeichen setzen,
- da sich sonst die Argumente verschieben und das Script dann Fehler ausgibt.
- Beispiel:
- ./webcamloader.sh quicky http://video.pafunddu.de/webcam/paf_rathaus.jpg \"Pfaffenhofen Rathaus\" 2000 10
-
--- ENDE --
-		Bitte warten...
-" > "$data/quickyinfo.txt"
-		more "$data/quickyinfo.txt"
-		rm "$data/quickyinfo.txt"
-		sleep 10
-		$0
-		exit
-	elif [ "$menu" = "5" ]; then
-		echo "Okay, ein Archiv integrieren."
-		sleep 2
-		intro
-		echo "Du kannst ein bereits mit dem webcamloader-Script gepacktes Archiv integrieren zur weiteren Bearbeitung."
-		echo "Dieses Archiv muss in das Bilderverzeichnis gespeichert werden, damit es vom Script aufgerufen werden kann."
-		echo "HINWEIS: Das Archiv muss dasselbe Format haben, wie es vom Script ausgegeben wird."
-		echo ""
-		echo "Welches Archiv soll integriert werden? Die Identifizierung erfolgt wieder mit der Projekt-ID."
-		echo ""
-		read -p "Deine Eingabe: " sid
-
-		name=$(ls $bilder | grep "$sid - " | cut -d ' ' -f 4- | sed "s: -.*::" | head -n1 | tail -n1)
-
-		if [ -f $bilder/Bilder\ $sid\ -*.tar ]; then
-			echo ""
-			echo "Okay, Projekt-ID $sid mit dem Namen $name."
-			echo "Wird entpackt..."
-			sleep 1
-			tar xf $bilder/Bilder\ $sid\ -*.tar -C "$bilder/"
-
-			if ! [ $(ls -A $bilder/$sid\ -* | wc -l) = "0" ]; then
-				echo ""
-				echo "Entpacken erfolgreich."
-				echo "Archiv wird gelöscht."
-				sleep 1
-				rm $bilder/Bilder\ $sid\ -*.tar
-				echo ""
-				echo "Fertig."
-			else
-				echo ""
-				echo "Irgendwas ist schief gelaufen. Es wurde nichts entpackt."
-				echo "Bitte nochmal probieren."
-				echo "Fehler, Abbruch."
-				sleep 3
-				exit
-			fi
-
-		elif [ -f $bilder/Bilder\ $sid\ -*.zip ]; then
-			echo ""
-			echo "ZIP wird im Moment noch nicht unterstützt. Bitte manuell entpacken."
-			sleep 3
-			exit
-#			unzip $bilder/Bilder\ $sid\ -*.zip
+	if [ -z "$portcam" ]; then
+		if echo "$2" | grep -q "https"; then
+			portcam="443"
 		else
-			echo "Kein gültiges Archiv gefunden!"
-			echo "Fehler, Abbruch."
-			sleep 3
-			exit
+			portcam="80"
 		fi
-
-	elif [ "$menu" = "6" ]; then
-		echo "Okay, einen Projekt-Ordner löschen."
-		sleep 2
-		intro
-		echo "Projekt-Ordner löschen..."
-		echo ""
-		echo "Welche Projekt-ID soll gelöscht werden?"
-		echo ""
-		read -p "Deine Eingabe: " sid
-		echo ""
-
-		anzahl=$(find $bilder/$sid* -type f | wc -l)
-		name=$(ls $bilder | grep "$sid - " | cut -d ' ' -f 3- | sed "s: (.*::" | head -n1 | tail -n1)
-
-		echo "Okay, $sid - $name."
-		sleep 1
-
-		if [ ! "$anzahl" = "0" ]; then
-			echo ""
-			echo "Es befinden sich $anzahl Bilder in diesem Ordner. Wirklich löschen?"
-			read -p "'ja' für ja, für nein ENTER: " loschen
-			if [ "$loschen" = "ja" ]; then
-				echo ""
-				rm -r $bilder/$sid\ *
-				echo "Projekt-ID $sid erfolgreich gelöscht."
-			fi
-		else
-			echo ""
-			rm -r $bilder/$sid\ *
-			echo "Projekt-ID $sid erfolgreich gelöscht."
-		fi
-
-	elif [ "$menu" = "7" ]; then
-		echo "Okay, Speicherbedarf vom Bilderordner anzeigen."
-		sleep 2
-		echo ""
-		echo $(du $bilder -hs)
-		echo ""
-		echo "Einen Moment, Du gelangst wieder ins Menü."
-		sleep 10
-		$0
-		exit
-
-	elif [ "$menu" = "8" ]; then
-		echo "Okay, Statistik anzeigen."
-		sleep 2
-		echo ""
-
-		if [ ! "$nummer" = "100" ]; then
-			echo "Projekte: $(($nummer - 100 + 1))"
-		fi
-		if [ -f "$data/exec-log.txt" ]; then
-			aktionen=$(sed $= -n "$data/exec-log.txt")
-			echo "Aktionen: $aktionen"
-		fi
-
-		echo ""
-		echo "Einen Moment, Du gelangst wieder ins Menü."
-		sleep 10
-		$0
-		exit
-
-else
-		echo "Fehler, keine gültige Eingabe getroffen."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-fi
-
-#					 ,ad8888ba,    88        88  88    ,ad8888ba,   88      a8P  8b        d8
-#					d8"'    `"8b   88        88  88   d8"'    `"8b  88    ,88'    Y8,    ,8P 
-#					8'        `8b  88        88  88  d8'            88  ,88"       Y8,  ,8P  
-#					8          88  88        88  88  88             88,d88'         "8aa8"   
-#					8          88  88        88  88  88             8888"88,         `88'    
-#					8,    "88,,8P  88        88  88  Y8,            88P   Y8b         88     
-#					Y8a.    Y88P   Y8a.    .a8P  88   Y8a.    .a8P  88     "88,       88     
-#					 `"Y8888Y"Y8a   `"Y8888Y"'   88    `"Y8888Y"'   88       Y8b      88     
-
-if [ "$1" = "quicky" ] && [ ! -z "$2" ] && [ ! -z "$3" ] && [ ! -z "$4" ] && [ ! -z "$5" ]; then
-
-	if ! ping -w 1 -c 1 "$ping" > /dev/null; then
-		echo ""
-		echo "Keine Internetverbindung. Störung?"
-		echo "Stelle sicher, dass der Webcamloader auf das Internet zugreifen kann und darf."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
 	fi
 
-	if ! [ "$4" -eq "$4" ]; then
+	#Prüfe, ob IP:Port erreichbar ist
+	if ! nc -z -w 1 "$pingcam" "$portcam" 2>/dev/null; then
 		echo ""
-		echo "Fehler. Bilderanzahl darf nur eine ganze Zahl sein."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
+		echo "Adresse: $pingcam:$portcam"
+		echo "Kamera nicht erreichbar. Störung?"
+		err="1"
 	fi
 
-	if [ "$4" -gt "14331" ]; then
+	#Bildanzahl nur ganze Zahl
+	if ! [[ $4 =~ ^[0-9]+$ ]]; then
 		echo ""
-		echo "Fehler: Bildanzahl überschritten, maximal 14.330 Bilder möglich!"
+		echo "Bildanzahl: $4"
+		echo "Bilderanzahl darf nur eine ganze, positive Zahl sein."
+		err="1"
+	fi
+
+	#Bildanzahl nicht über max
+	if ! (( "$4" <= "14000" )); then
+		echo ""
+		echo "Bildanzahl überschritten, maximal 14.000 Bilder möglich!"
 		echo "Es kann sonst kein Video erstellt werden."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
+		err="1"
 	fi
 
-	if ! [ "$5" -eq "$5" ]; then
+	#Pause nur ganze Zahl
+	if ! [[ $5 =~ ^[0-9]+$ ]]; then
 		echo ""
-		echo "Fehler: Pause zwischen Bildern darf nur eine ganze Zahl sein."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
+		echo "Pause: $5"
+		echo "Pause darf nur eine ganze, positive Zahl sein."
+		err="1"
 	fi
 
-	vdatei1=$(echo "$2" | grep ".mjpg")
-	vdatei2=$(echo "$2" | grep "faststream")
-	vdatei3=$(echo "$2" | grep "video.cgi")
-	vdatei4=$(echo "$2" | grep "videostream.cgi")
-	vdatei5=$(echo "$2" | grep "mjpg.cgi")
-	vdatei6=$(echo "$2" | grep "GetData.cgi")
-	vdatei7=$(echo "$2" | grep "?video")
+	#Bei Fehler: Abbruch
+	if [ "$err" = "1" ]; then
+		echo ""
+		echo "Fehler, Abbruch."
+		exit 1
+	fi
 
-	if [ -n "$vdatei1" ] || [ -n "$vdatei2" ] || [ -n "$vdatei3" ] || [ -n "$vdatei4" ] || [ -n "$vdatei5" ] || [ -n "$vdatei6" ] || [ -n "$vdatei7" ]; then
+	#Prüfung, ob der Stream ein Video oder Bild ist
+	if echo "$2" | grep -qE '\.mjpg|\.mjpeg|faststream|video\.cgi|GetOneShot|mjpg\.cgi|videostream\.cgi|\/image|\?action\=stream|\/cam_.\.cgi'; then
 		video="1"
-	fi
-
-	intro
-	echo "Projekt-ID:	$nummer"
-	echo "Projekt		$3"
-	echo "Anzahl		$4"
-	echo "Pause		$5"
-	echo ""
-	echo ""
 	
-	if [ ! -z "$6" ]; then
-		echo "Mache bei Bild Nr. $x weiter."
-		echo "Es können danach zwei Projekte zusammengeführt werden."
+	elif echo "$2" | grep -qE 'snapshot\.cgi|SnapshotJPEG|\.jpg|api\.cgi|cgi-bin\/camera|alarmimage|oneshotimage|image\/Index|CGIProxy\.fcgi|nph-jpeg\.cgi|onvif\/snapshot'; then
+		video="0"
+	
+	elif echo "$2" | grep -qE 'GetData\.cgi|mjpeg\.cgi|\.png'; then
+		echo "Kameraformat wird nicht unterstützt. Das Programm kann nicht arbeiten."
+		echo "Fehler, Abbruch."
+		exit 1
 	else
-		echo "Dauer etwa $(($4*$5/60)) Min., $(($4*$5/60/60)) Std., $(($4*$5/60/60/24)) Tag(e)."
-		echo "Im Idealfall fertig: $(date -d "+$(($4*$5/60)) minutes" +"%d.%m.%y, %H:%M:%S")."
-		echo ""
-		echo "Prüfe, ob die URL gültig ist und berechne benötigte Speicherkapazität..."
-		echo ""
-		echo "Sollte nach mehreren Sekunden keine Bestätigung kommen, handelt es sich um ein Videoformat,"
-		echo "welches noch nicht im Script erfasst wurde. Unterbreche das Script mit STRG+C."
-		echo "Rufe das Script noch einmal auf und hänge provisorisch an die Adresse am Ende ein \"?video\" an."
-
-		if [ "$video" = "1" ]; then
-			ffmpeg -y -i "$2" -loglevel quiet -nostats -hide_banner -vframes 1 "$data/$nummer-test.jpg" > /dev/null
-			if [ ! $(stat -c%s "$data/$nummer-test.jpg") -gt "$testgroesse" ] ;then
-				echo ""
-				echo "Fehler!"
-				echo "Die eingegebene URL liefert kein Bild!"
-				echo "Fehler, Abbruch."
-				rm $data/$nummer-test.*
-				sleep 3
-				exit
-			else
-				ls -l "$data/" | grep "$nummer-test.jpg" | sed "s:     : :g ; s:    : :g ; s:   : :g ; s:  : :g" | cut -d ' ' -f 5 > "$data/$nummer-test.txt"
-				grosse=$(cat "$data/$nummer-test.txt" | head -n1 | tail -n1)
-				echo ""
-				echo "Am Ende wird der Projekt-Ordner um die $(($4*$grosse/1048576)) MB groß sein."
-				rm $data/$nummer-test.*
-			fi
-		else
-			wget "$2" -O "$data/$nummer-test.jpg" -a /dev/null
-			if [ ! $(stat -c%s "$data/$nummer-test.jpg") -gt "$testgroesse" ] ;then
-				echo ""
-				echo "Fehler!"
-				echo "Die eingegebene URL liefert kein Bild!"
-				echo "Fehler, Abbruch."
-				rm $data/$nummer-test.*
-				sleep 3
-				exit
-			else
-				ls -l "$data/" | grep "$nummer-test.jpg" | sed "s:     : :g ; s:    : :g ; s:   : :g ; s:  : :g" | cut -d ' ' -f 5 > "$data/$nummer-test.txt"
-				grosse=$(cat "$data/$nummer-test.txt" | head -n1 | tail -n1)
-				echo ""
-				echo "Am Ende wird der Projekt-Ordner um die $(($4*$grosse/1048576)) MB groß sein."
-				rm $data/$nummer-test.*
-			fi
-		fi
+		echo "Kameraformat nicht erkannt. Das Programm kann nicht arbeiten."
+		echo "Fehler, Abbruch."
+		exit 1
 	fi
 
-	echo ""
-	echo ""
-	echo ""
-	read -p "Download starten? >> ENTER" null
-	echo "$(($nummer + 1))" > "$data/nummer.txt" # raufzählen bei der Projekt-ID
-	mkdir "$bilder/$nummer - $3 ($4 Stk - $5 Sek)" # Projekt-ID-Ordner erstellen mit Bildanzahl
-	echo "$nummer;Quicky;$(date +"%d.%m.%Y;%H:%M");$4;$5;;;$3;$2" >> "$data/Protokoll.csv"
+	#Kritische Zeichen wie . oder / ersetzen
+	projektname=$(echo "$3" | sed 's/\./-/g; s/\//-/g')
 
-	intro
-	echo "PROJEKT: $nummer - $3"
-	sleep 2
+	#Zusammenfassung
+	clear
+	echo "Projekt-ID:   $projekt"
+
+	if [ "$3" = "$projektname" ]; then
+		echo "Projekt-Name: $3"
+	else
+		echo "Projekt-Name: $3 -> wird intern zu $projektname"
+	fi
+	
+	echo "Anzahl:       $4"
+	echo "Pause:        $5"
+
+	if [ -n "$6" ]; then
+	    echo "E-Mail:       $6"
+	else
+		echo "E-Mail:       keine Benachrichtiung"
+    fi
+
 	echo ""
 	echo ""
+
+	#Dauererrechnung - theoretisch nach Bildanzahl x Pause
+	echo "Dauer etwa $((($4 * $5 / 60) + $4 / 60)) Min., $(($4 * $5 / 60 / 60)) Std., $(($4 * $5 / 60 / 60 / 24)) Tag(e)."
+	echo "Theoretisch fertig: am $(date -d "+$((($4 * $5 / 60) + $4 / 60)) minutes" +"%d.%m.%y um %H:%M") Uhr."
+	echo ""
+
+	#Setze die theoretisch-fertig-Zeit in eine Variable, um sie permanent anzuzeigen
+	fertig="am $(date -d "+$(($4*$5/60)) minutes" +"%d.%m.%y um %H:%M") Uhr."
 
 	if [ "$video" = "1" ]; then
-		while [ $x -le $4 ]; do # solange ausführen, bis Anzahl erreicht
-			while ! ping -w 3 -c 1 "$ping" > /dev/null; do
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Keine Internetverbindung. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Keine Internetverbindung" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			done
-			ffmpeg -y -i "$2" -loglevel quiet -nostats -hide_banner -vframes 1 "$bilder/$nummer - $3 ($4 Stk - $5 Sek)/test.jpg" > /dev/null
-			if [ $(stat -c%s "$bilder/$nummer - $3 ($4 Stk - $5 Sek)/test.jpg") -gt "$testgroesse" ]; then
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $4 wird erstellt..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Bild $x / $4 (V)" >> "$data/exec-log.txt"
-				mv "$bilder/$nummer - $3 ($4 Stk - $5 Sek)/test.jpg" "$bilder/$nummer - $3 ($4 Stk - $5 Sek)/$(date +"%Y%m%d%H%M%S") - $3 ($5 s, $4 Stk).jpg" > /dev/null
-				sleep "$5"
-				x=$(($x + 1))
-			else
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Ziel-Host nicht erreichbar oder fehlerhaftes Bild. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Ziel-Host nicht erreichbar (V)" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			fi
-		done 
-	else
-		while [ $x -le $4 ]; do # solange ausführen, bis Anzahl erreicht
-			while ! ping -w 3 -c 1 "$ping" > /dev/null; do
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Keine Internetverbindung. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Keine Internetverbindung" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			done
-			intro
-			echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $4 wird erstellt..."
-			echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Bild $x / $4 (B)" >> "$data/exec-log.txt"
-			wget "$2" -O "$bilder/$nummer - $3 ($4 Stk - $5 Sek)/$(date +"%Y%m%d%H%M%S - $3 - $x von $4 ($5 s).jpg")" -a /dev/null
-			sleep "$5"
-			x=$(($x + 1))
-		done
-	fi
-		
-	intro
-	echo "$4 Bild(er) gespeichert mit der Projekt-Nummer $nummer ($3)"
-	echo ""
-	echo "Räume auf: entferne fehlerhafte Bilder..."
-	find $bilder/$nummer* -type f -name *.jpg -size 0c -exec rm {} \;
-
-	if [ "$zusammenfuhren" = "1" ]; then
-		touch "$bilder/$nummer fertig (Z)"
-		echo ""
-		echo ""
-		echo "Mit welcher Projekt-ID möchtest Du die aktuelle $nummer zusammenführen?"
-		echo ""
-		read -p "Projekt-ID: " id
-		echo ""
-		echo "Okay, die $nummer wird nach $id verschoben und zusammengeführt. Bitte warten."
-		sleep 1
-		mv $bilder/$nummer\ -*/*.jpg $bilder/$id\ -*
-
-		if [ $(ls -A $bilder/$nummer\ -* | wc -l) = "0" ]; then # lösche altes Verzeichnis
-			rm -r $bilder/$nummer\ -*
-		fi
-
-		if [ -f "$bilder/$nummer fertig (Z)" ]; then # lösche altes fertig-Flag
-			rm "$bilder/$nummer fertig (Z)"
-		fi
-
-		touch "$bilder/$id fertig"
-	else
-		touch "$bilder/$nummer fertig"
+		echo "Kamera liefert einen Videostream"
+		ffmpeg -y -i "$2" -analyzeduration 5M -probesize 5M -loglevel quiet -nostats -hide_banner -vframes 1 "$data/$projekt-test.jpg"
+	elif [ "$video" = "0" ]; then
+		echo "Kamera liefert Bilder"
+		wget "$2" -O "$data/$projekt-test.jpg" -a /dev/null
 	fi
 
-	echo "Fertig."
-
-elif [ "$1" = "quicky" ] && ([ ! -z "$2" ] || [ ! -z "$3" ] || [ ! -z "$4" ] || [ ! -z "$5" ]); then
-	echo ""
-	echo "Fehler, für den Quicky-Modus fehlt mindestens ein Argument."
-	echo "Fehler, Abbruch."
-	sleep 3
-	exit
-fi
-
-#					888b      88    ,ad8888ba,    88888888ba   88b           d88         db         88
-#					8888b     88   d8"'    `"8b   88      "8b  888b         d888        d88b        88
-#					88 `8b    88  d8'        `8b  88      ,8P  88`8b       d8'88       d8'`8b       88
-#					88  `8b   88  88          88  88aaaaaa8P'  88 `8b     d8' 88      d8'  `8b      88
-#					88   `8b  88  88          88  88""""88'    88  `8b   d8'  88     d8YaaaaY8b     88
-#					88    `8b 88  Y8,        ,8P  88    `8b    88   `8b d8'   88    d8""""""""8b    88
-#					88     `8888   Y8a.    .a8P   88     `8b   88    `888'    88   d8'        `8b   88
-#					88      `888    `"Y8888Y"'    88      `8b  88     `8'     88  d8'          `8b  88888888888
-
-if [ "$1" = "normal" ]; then
-
-	if ! ping -w 1 -c 1 "$ping" > /dev/null; then
-		echo ""
-		echo "Keine Internetverbindung. Störung?"
-		echo "Stelle sicher, dass der Webcamloader auf das Internet zugreifen kann und darf."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-
-	intro
-	echo "Projekt-ID:		$nummer"
-	echo ""
-	read -p "Webcam-URL:		" url
-	read -p "Bezeichnung:		" name
-	read -p "Bildanzahl:		" anzahl
-	read -p "Pause zw. Bildern in s:	" pause
-
-	if ! [ "$anzahl" -eq "$anzahl" > /dev/null ]; then
-		echo ""
-		echo "Fehler. Bilderanzahl darf nur eine ganze Zahl sein."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-
-	if ! [ "$pause" -eq "$pause" > /dev/null ]; then
-		echo ""
-		echo "Fehler: Pause zwischen Bildern darf nur eine ganze Zahl sein."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-
-	if [ "$anzahl" -gt "14331" ]; then
-		echo ""
-		echo "Fehler: Bildanzahl überschritten, maximal 14.330 Bilder möglich!"
-		echo "Es kann sonst kein Video erstellt werden."
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-
-	vdatei1=$(echo "$url" | grep ".mjpg")
-	vdatei2=$(echo "$url" | grep "faststream")
-	vdatei3=$(echo "$url" | grep "video.cgi")
-	vdatei4=$(echo "$url" | grep "videostream.cgi")
-	vdatei5=$(echo "$url" | grep "mjpg.cgi")
-	vdatei6=$(echo "$url" | grep "GetData.cgi")
-	vdatei7=$(echo "$url" | grep "?video")
-
-	if [ -n "$vdatei1" ] || [ -n "$vdatei2" ] || [ -n "$vdatei3" ] || [ -n "$vdatei4" ] || [ -n "$vdatei5" ] || [ -n "$vdatei6" ] || [ -n "$vdatei7" ]; then
-		video="1"
-	fi
-
-	intro
-	echo "- ZUSAMMENFASSUNG -"
-	echo ""
-	echo "Dauer etwa $(($anzahl*$pause/60)) Min., $(($anzahl*$pause/60/60)) Std., $(($anzahl*$pause/60/60/24)) Tag(e)."
-	echo "Im Idealfall fertig: $(date -d "+$(($anzahl*$pause/60)) minutes" +"%d.%m.%y, %H:%M:%S")."
-	echo ""
-	echo "Prüfe, ob die URL gültig ist und berechne benötigte Speicherkapazität..."
-	echo ""
-	echo "Sollte nach mehreren Sekunden keine Bestätigung kommen, handelt es sich um ein Videoformat,"
-	echo "welches noch nicht im Script erfasst wurde. Unterbreche das Script mit STRG+C."
-	echo "Rufe das Script noch einmal auf und hänge provisorisch an die Adresse am Ende ein \"?video\" an."
 	echo "Berechne benötigte Speicherkapazität..."
 
-	if [ "$video" = "1" ]; then
-		ffmpeg -y -i "$url" -loglevel quiet -nostats -hide_banner -vframes 1 "$data/$nummer-test.jpg" > /dev/null
-		if [ ! $(stat -c%s "$data/$nummer-test.jpg") -gt "$testgroesse" ] ;then
-			echo ""
-			echo "Fehler!"
-			echo "Die eingegebene URL liefert kein Bild!"
-			echo "Fehler, Abbruch."
-			rm $data/$nummer-test.*
-			sleep 3
-			exit
-		else
-			ls -l "$data/" | grep "$nummer-test.jpg" | sed "s:     : :g ; s:    : :g ; s:   : :g ; s:  : :g" | cut -d ' ' -f 5 > "$data/$nummer-test.txt"
-			grosse=$(cat "$data/$nummer-test.txt" | head -n1 | tail -n1)
-			echo ""
-			echo "Am Ende wird der Projekt-Ordner um die $(($anzahl*$grosse/1048576)) MB groß sein."
-			rm $data/$nummer-test.*
-		fi
+	if [ $(stat -c%s "$data/$projekt-test.jpg") -gt "$testgroesse" ]; then
+		ls -l "$data/" | grep "$projekt-test.jpg" | sed "s:     : :g ; s:    : :g ; s:   : :g ; s:  : :g" | cut -d ' ' -f 5 > "$data/$projekt-test.txt"
+		groesse=$(cat "$data/$projekt-test.txt" | head -n1 | tail -n1)
+		echo ""
+		grosse_mb_soll=$(($4*$groesse/1048576))
+		echo "Am Ende wird der Projekt-Ordner um die $grosse_mb_soll MB groß sein."
+		rm $data/$projekt-test.*
 	else
-		wget "$url" -O "$data/$nummer-test.jpg" -a /dev/null
-		if [ ! $(stat -c%s "$data/$nummer-test.jpg") -gt "$testgroesse" ] ;then
-			echo ""
-			echo "Fehler!"
-			echo "Die eingegebene URL liefert kein Bild!"
-			echo "Fehler, Abbruch."
-			rm $data/$nummer-test.*
-			sleep 3
-			exit
-		else
-			ls -l "$data/" | grep "$nummer-test.jpg" | sed "s:     : :g ; s:    : :g ; s:   : :g ; s:  : :g" | cut -d ' ' -f 5 > "$data/$nummer-test.txt"
-			grosse=$(cat "$data/$nummer-test.txt" | head -n1 | tail -n1)
-			echo ""
-			echo "Am Ende wird der Projekt-Ordner um die $(($anzahl*$grosse/1048576)) MB groß sein."
-			rm $data/$nummer-test.*
+		echo ""
+		echo "Fehler! Die angegebene Kamera liefert kein Bild!"
+		echo "Fehler, Abbruch."
+
+		if [ -f "$data/$projekt-test*" ]; then
+			rm $data/$projekt-test.*
 		fi
+		exit 1
 	fi
 
 	echo ""
 	echo ""
-	echo ""
-	read -p "Download starten? >> ENTER" null
-	echo "$(($nummer + 1))" > "$data/nummer.txt" # raufzählen bei der Projekt-ID
-	mkdir "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)" # Projekt-ID-Ordner erstellen mit Bildanzahl
-	echo "$nummer;Normal;$(date +"%d.%m.%Y;%H:%M");$anzahl;$pause;;;$name;$url" >> "$data/Protokoll.csv"
+	echo "--------------------------"
+	read -p "Download starten? >> ENTER " null
 
-	intro
-	echo "PROJEKT: $nummer - $name"
-	sleep 2
-	echo ""
-	echo ""
+	#erstelle LOG-Datei
+	echo "Projekt-ID: $projekt" >> "$data/exec-log/$projekt.txt"
+	echo "Kamera-URL: $2" >> "$data/exec-log/$projekt.txt"
+	echo "Projektname: $3 ($projektname)" >> "$data/exec-log/$projekt.txt"
+	echo "Bildanzahl: $4" >> "$data/exec-log/$projekt.txt"
+	echo "Pause: $5" >> "$data/exec-log/$projekt.txt"
+	echo "Theoretisches Ende: $fertig" >> "$data/exec-log/$projekt.txt"
+	echo "E-Mail: $6" >> "$data/exec-log/$projekt.txt"
+	echo "" >> "$data/exec-log/$projekt.txt"
 
-	if [ "$video" = "1" ]; then
-		while [ $x -le $anzahl ]; do # solange ausführen, bis Anzahl erreicht
-			while ! ping -w 3 -c 1 "$ping" > /dev/null; do
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Keine Internetverbindung. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Keine Internetverbindung" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			done
-			ffmpeg -y -i "$url" -loglevel quiet -nostats -hide_banner -vframes 1 "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)/test.jpg" > /dev/null
-			if [ $(stat -c%s "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)/test.jpg") -gt "$testgroesse" ]; then
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $anzahl wird erstellt..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Bild $x / $anzahl (V)" >> "$data/exec-log.txt"
-				mv "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)/test.jpg" "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)/$(date +"%Y%m%d%H%M%S") - $name ($pause s, $anzahl Stk).jpg" > /dev/null
-				sleep "$pause"
-				x=$(($x + 1))
-			else
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Ziel-Host nicht erreichbar oder fehlerhaftes Bild. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Ziel-Host nicht erreichbar (V)" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			fi
-		done 
-	else
-		while [ $x -le $anzahl ]; do # solange ausführen, bis Anzahl erreicht
-			while ! ping -w 3 -c 1 "$ping" > /dev/null; do
-				intro
-				echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Keine Internetverbindung. Prüfe erneut..."
-				echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Keine Internetverbindung" >> "$data/exec-log.txt"
-				sleep "$lostwarten"
-			done
-			intro
-			echo "($nummer) $(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $anzahl wird erstellt..."
-			echo "($nummer) $(date +"%y%m%d-%H%M%S") :: Bild $x / $anzahl (B)" >> "$data/exec-log.txt"
-			wget "$url" -O "$bilder/$nummer - $name ($anzahl Stk - $pause Sek)/$(date +"%Y%m%d%H%M%S - $name - $x von $anzahl ($pause s).jpg")" -a /dev/null
-			sleep "$pause"
-			x=$(($x + 1))
+	#ersetze Leerzeichen gegen Unterstriche und setze incomplete-Datei
+	nameneu=$(echo "$projektname" | sed 's/ /_/g')
+	touch "$data/.$projekt.$nameneu.$4.$5.incomplete"
+
+	#Setze Projekt +1
+	neuprojekt=$(($projekt + 1))
+	sed -i "s/Projekt = $projekt/Projekt = $neuprojekt/" "$data/config.txt"
+
+	#Projekt-ID-Ordner erstellen mit Bildanzahl
+	mkdir "$pfad/$projekt - $projektname (${4}Stk - ${5}s)"
+
+	x="1"
+
+	while [ "$x" -le "$4" ]; do #solange ausführen, bis Anzahl erreicht
+
+		#Prüfe, ob Kamera offline ist
+		while ! nc -z -w 1 "$pingcam" "$portcam" 2>/dev/null; do
+			clear
+			echo "W E B C A M L O A D E R"
+			echo ""
+			echo ""
+			echo "PROJEKT: $projekt - $projektname"
+			echo "Theoretisch fertig: $fertig"
+			echo ""
+			#Ausgabe
+			echo "$(date +"%d.%m.%y %H:%M:%S") :: Kamera offline? Prüfe erneut nach $offwarten Sekunden..."
+			#Protokolliere
+			echo "$(date +"%d.%m.%y %H:%M:%S") :: Kamera offline" >> "$data/exec-log/$projekt.txt"
+			sleep "$offwarten"
 		done
-	fi
-		
-	intro
-	echo "$anzahl Bild(er) gespeichert mit der Projekt-Nummer $nummer ($name)"
-	echo ""
-	echo "Räume auf: entferne fehlerhafte Bilder..."
-	find $bilder/$nummer* -type f -name *.jpg -size 0c -exec rm {} \;
-	echo "Fertig."
-	touch "$bilder/$nummer fertig"
+	
+		clear
+		echo "W E B C A M L O A D E R"
+		echo ""
+		echo ""
+		echo "PROJEKT: $projekt - $projektname - Pause: ${5}s"
+		echo "Theoretisch fertig: $fertig"
+		echo ""
+		#Ausgabe
+		echo "$(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $4 wird erstellt..."
+		#Protokolliere
+		echo "$(date +"%d.%m.%y %H:%M:%S") :: Bild $x / $4" >> "$data/exec-log/$projekt.txt"
 
-	if [ "$zusammenfuhren" = "1" ]; then
-		echo "$bilder/$nummer fertig"
-		echo ""
-		echo ""
-		echo "Mit welcher Projekt-ID möchtest Du die aktuelle $nummer zusammenführen?"
-		echo ""
-		read -p "Projekt-ID: " id
-		echo ""
-		echo "Okay, die $nummer wird nach $id verschoben und zusammengeführt. Bitte warten."
-		sleep 1
-		mv $bilder/$nummer\ -*/*.jpg $bilder/$id\ -*
+		if [ "$video" = "1" ]; then
+			ffmpeg -y -i "$2" -loglevel quiet -nostats -hide_banner -vframes 1 "$pfad/$projekt - $projektname (${4}Stk - ${5}s)/$(date +"%y%m%d%H%M%S - $projektname - $x von $4 (${5}s).jpg")" > "/dev/null"
 
-		if [ $(ls -A $bilder/$nummer\ -* | wc -l) = "0" ]; then # lösche altes Verzeichnis
-			rm -r $bilder/$nummer\ -*
+		elif [ "$video" = "0" ]; then
+			wget "$2" -O "$pfad/$projekt - $projektname (${4}Stk - ${5}s)/$(date +"%y%m%d%H%M%S - $projektname - $x von $4 (${5}s).jpg")" -a "/dev/null"
 		fi
 
-		if [ -f "$bilder/$nummer fertig" ]; then # lösche altes fertig-Flag
-			rm "$bilder/$nummer fertig"
-		fi
+		sleep "$5"
+		x=$(($x + 1))
+	done
 
-		touch "$bilder/$id fertig"
+	clear
+	echo "$4 Bild(er) gespeichert mit der Projekt-Nummer $projekt ($projektname)"
+	echo "Räume auf: entferne fehlerhafte Bilder, die kleiner sind als $testgroesse Bytes..."
+
+	find "$pfad/$projekt"* -maxdepth 1 -type f -name "*.jpg" -size -${testgroesse}c -exec rm {} \;
+
+	bildanzahl=$(find $pfad/$projekt* -type f | wc -l)
+
+	if [ ! "$4" = "$bildanzahl" ]; then
+		echo "Tatsächliche Bilder nach dem Entfernen ungültiger Bilder: $bildanzahl."
 	else
-		touch "$bilder/$nummer fertig"
+		echo "Alle Bilder OK."
 	fi
 
+	nameneu=$(echo "$projektname" | sed 's/ /_/g')
+	mv $data/.$projekt.*.incomplete "$data/.$projekt.$nameneu.$bildanzahl.$5.fertig"
+
+	dat_org="$pfad/$projekt - $projektname (${4}Stk - ${5}s)"
+	dat_mod="$pfad/$projekt - $projektname (${bildanzahl}Stk - ${5}s)"
+
+	if [ ! "$dat_org" = "$dat_mod" ]; then
+		mv "$dat_org" "$dat_mod"
+	fi
+
+	if [ -n "$6" ]; then
+	    echo "Sammle Informationen..."
+
+        # SAMMELN BGEINN
+		echo "W E B C A M L O A D E R" >> "$data/email.txt"
+		echo "Projekt fertig!" >> "$data/email.txt"
+		echo "" >> "$data/email.txt"
+		echo "" >> "$data/email.txt"
+		echo "Projekt-ID: $projekt" >> "$data/email.txt"
+		echo "Projektname: $projektname" >> "$data/email.txt"
+
+		if [ "$4" = "$bildanzahl" ]; then
+			echo "Bildanzahl: $bildanzahl Stk." >> "$data/email.txt"
+		else
+			echo "Bildanzahl soll: $4 Stk." >> "$data/email.txt"
+			echo "Bildanzahl ist: $bildanzahl Stk." >> "$data/email.txt"
+		fi
+
+		echo "Pause: $5 Sek." >> "$data/email.txt"
+		echo "" >> "$data/email.txt"
+		echo "Projektgröße errechnet: ${grosse_mb_soll}M" >> "$data/email.txt"
+		echo "Projektgröße tatsächlich: $(du -sh $pfad/${projekt}* | cut -d '/' -f 1)" >> "$data/email.txt"
+		# SAMMELN ENDE
+
+		echo "Sende E-Mail..."
+
+		cat "$data/email.txt" | mail -s "Webcamloader" "$6"
+
+		rm "$data/email.txt"
+	fi
+
+	echo ""
 	echo "Fertig."
+
+	exit 0
+	}
+
+#	 ██████  ██    ██ ██  ██████ ██   ██ ██    ██
+#	██    ██ ██    ██ ██ ██      ██  ██   ██  ██ 
+#	██    ██ ██    ██ ██ ██      █████     ████  
+#	██ ▄▄ ██ ██    ██ ██ ██      ██  ██     ██   
+#	 ██████   ██████  ██  ██████ ██   ██    ██   
+#	    ▀▀                                        
+
+if [ "$1" = "quicky" ] && [ -n "$2" ] && [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] && [ -f "$data/.installed" ]; then
+
+	arbeit "$1" "$2" "$3" "$4" "$5" "$6"
+
+elif [ "$1" = "quicky" ] && [ -z "$5" ]; then
+	echo "Fehler, für den Quicky-Modus fehlt mindestens ein Argument."
+	echo "Info:"
+	echo "$0 quicky Kamera-URL Projekt-Name Gesamtbilder Pause"
+	echo "$0 quicky http://172.16.20.36:8084/snapshot.cgi \"Haus 2\" 5000 10"
+	echo ""
+	echo "Darauf achten: Leerzeichen trennt, ist im Namen ein Leerzeichen enthalten, unbedingt mit \" \" arbeiten!"
+	echo ""
+	echo "Hinweis:"
+	echo "\$1 = quicky"
+	echo "\$2 = Kamera-URL"
+	echo "\$3 = Name des Projekts"
+	echo "\$4 = Bildanzahl"
+	echo "\$5 = Pause zwischen Bildern"
+	echo "\$6 = E-Mail-Adresse zum Benachrichtigen wenn Projekt fertig (OPTIONAL!)"
+	exit 1
 fi
 
-#					       db         88888888ba     ,ad8888ba,   88        88  88  8b           d8
-#					      d88b        88      "8b   d8"'    `"8b  88        88  88  `8b         d8'
-#					     d8'`8b       88      ,8P  d8'            88        88  88   `8b       d8' 
-#					    d8'  `8b      88aaaaaa8P'  88             88aaaaaaaa88  88    `8b     d8'  
-#					   d8YaaaaY8b     88""""88'    88             88""""""""88  88     `8b   d8'   
-#					  d8""""""""8b    88    `8b    Y8,            88        88  88      `8b d8'    
-#					 d8'        `8b   88     `8b    Y8a.    .a8P  88        88  88       `888'     
-#					d8'          `8b  88      `8b    `"Y8888Y"'   88        88  88        `8'      
+#	███    ███ ███████ ███    ██ ██    ██ ███████ ███████ ██   ██ ████████  ██████  ██████  
+#	████  ████ ██      ████   ██ ██    ██ ██      ██      ██  ██     ██    ██    ██ ██   ██ 
+#	██ ████ ██ █████   ██ ██  ██ ██    ██ ███████ █████   █████      ██    ██    ██ ██████  
+#	██  ██  ██ ██      ██  ██ ██ ██    ██      ██ ██      ██  ██     ██    ██    ██ ██   ██ 
+#	██      ██ ███████ ██   ████  ██████  ███████ ███████ ██   ██    ██     ██████  ██   ██ 
 
-if [ "$1" = "archiv" ]; then
-	intro
-	echo "Archivarer"
+if [ -z "$1" ]; then
+
+#	projektneu=$(grep -w "Projekt" "$data/config.txt" | cut -d '=' -f 2 | cut -d '#' -f 1 | tr -d ' ')
+#	projekt=$((projektneu - 1))
+
+	clear
+	echo "W E B C A M L O A D E R"
 	echo ""
 	echo ""
-	if [ "$aktiv" = "0" ]; then
-		echo "Es ist nichts vorhanden,"
-		echo "von was möchtest du ein Video erstellen?"
+	echo "Willkommen! ••• Menü."
+	echo ""
+
+#	                 ██  ██       ██ 		██   ██  █████  ██    ██ ██████  ████████
+#	                ████████     ███ 		██   ██ ██   ██ ██    ██ ██   ██    ██   
+#	█████ █████      ██  ██       ██ 		███████ ███████ ██    ██ ██████     ██   
+#	                ████████      ██ 		██   ██ ██   ██ ██    ██ ██         ██   
+#	                 ██  ██       ██ 		██   ██ ██   ██  ██████  ██         ██   
+
+	echo "1 - Geführter Modus"
+	echo "2 - Fertige Projekte"
+	echo "3 - Projekt abschließen"
+#	echo "4 - Status laufender Projekte"
+
+	echo ""
+	read -p "Auswahl: " auswahl
+	echo ""
+
+#	                 ██  ██       ██     ██ 		 ██████  ███████ ███████ 
+#	                ████████     ███    ███ 		██       ██      ██      
+#	█████ █████      ██  ██       ██     ██ 		██   ███ █████   █████   
+#	                ████████      ██     ██ 		██    ██ ██      ██      
+#	                 ██  ██       ██ ██  ██ 		 ██████  ███████ ██      
+
+	if [ "$auswahl" = "1" ]; then
+		clear
+		echo "W E B C A M L O A D E R"
 		echo ""
-		echo "Bitte zuerst ein Projekt starten!"
 		echo ""
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
+		echo "Menü 1.1: Geführter Modus"
+		echo ""
+		echo "In diesem Menü werden nacheinander die Parameter abgefragt, die für das Programm wichtig sind."
+		echo "Geprüft werden die Eingaben zum Abschluss"
+		echo ""
+		echo ""
+		echo "Bitte nacheinander Parameter eingeben:"
+		echo ""
+		echo ""
+
+		read -p "Kamera-URL: " url
+		#Prüfung?
+
+		read -p "Name des Projekts: " name
+		#Prüfung?
+
+		read -p "Wie viele Bilder insgesamt: " anzahl
+		#Prüfung?
+
+		read -p "Pause zwischen Bildern: " pause
+		#Prüfung?
+
+		read -p "Soll eine E-Mail bei Fertigstellung gesendet werden? Falls ja, E-Mail-Adresse, falls nein, leer lassen: " email
+		#Prüfung?
+
+#		arbeit "$1"     "$2"   "$3"    " $4"     "$5"     "$6"
+		arbeit "menu" "$url" "$name" "$anzahl" "$pause" "$email"
 	fi
-	echo "Welche Projekt-ID soll archiviert werden? Für alle, schreibe 'alle'."
-	echo "Es werden nur die Bilder-Ordner archiviert, keine Videos."
-	echo ""
-	read -p "Deine Eingabe: " sid
-	echo ""
-	if [ "$sid" = "alle" ]; then
-		echo "Es werden alle Projekte archiviert."
-	else
-		echo "Es wird das Projekt Nummer $sid archiviert."
-	fi
-	sleep 2
-	echo ""
-	echo ""
-	echo "Archiv in .tar ( 1 ) oder .zip ( 2 )?"
-	echo ""
-	read -p "Deine Eingabe: " archivnr
-	echo ""
 
-	anzahl=$(find $bilder/$sid* -type f | wc -l)
-	name=$(ls $bilder | grep "$sid - " | cut -d ' ' -f 3- | sed "s: (.*::" | head -n1 | tail -n1)
+#	                 ██  ██       ██    ██████  	███████ ███████ ██████  
+#	                ████████     ███         ██ 	██      ██      ██   ██ 
+#	█████ █████      ██  ██       ██     █████  	█████   █████   ██████  
+#	                ████████      ██    ██      	██      ██      ██   ██ 
+#	                 ██  ██       ██ ██ ███████ 	██      ███████ ██   ██ 
 
-	if [ "$archivnr" = "1" ]; then
-		echo "Okay, tar."
-		echo "Bitte warten..."
+	if [ "$auswahl" = "2" ]; then
+		clear
+		echo "W E B C A M L O A D E R"
+		echo ""
+		echo ""
+		echo "Menü 2.1: Fertige Projekte"
+		echo ""
 
-		if [ -f "$bilder/$sid fertig" ]; then # kann mit der Zeit weg
-			rm "$bilder/$sid fertig"
+		# Liste der Dateien im Verzeichnis abrufen
+		file_list=$(find "$data" -maxdepth 1 -type f -name *.fertig 2>/dev/null)
+
+		# Überprüfen, ob Dateien gefunden wurden
+		if [ -n "$file_list" ]; then
+
+			# Schleife über die Dateien
+			for file in $file_list; do
+
+				# Projektnummer und Projektnamen extrahieren
+				projektnummer=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 2)
+				projektname=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 3 | sed 's/_/ /g')
+				bildanzahl=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 4)
+				pause=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 5)
+
+				echo "$projektnummer - $projektname - Bildanzahl: $bildanzahl - Pause: $pause"
+			done
+		else
+			echo "Keine fertigen Projekte gefunden."
+			exit 0
 		fi
 
-		if [ ! "$sid" = "alle" ]; then	# wenn SID und TAR
-			cd "$bilder"
-			tar -cpf "Bilder $sid - $name - $zeitstempel ($anzahl Stk).tar" $sid*
-			echo ""
-			echo "$sid;Archiv;$(date +"%d.%m.%Y;%H:%M");$anzahl;TAR;;;$name" >> "$data/Protokoll.csv"
+		echo ""
+		read -p "Projektnummer zur weiteren Bearbeitung: " projekt
 
-			if [ -f $bilder/Bilder\ $sid\ -*.tar ]; then
-				rm -r $bilder/$sid\ -*
+		projektname=$(find "$data" -name .$projekt.* | awk -F'/' '{print $NF}' | cut -d '.' -f 3 | sed 's/_/ /g')
+		bildanzahl=$(find "$data" -name .$projekt.* | awk -F'/' '{print $NF}' | cut -d '.' -f 4)
+		pause=$(find "$data" -name .$projekt.* | awk -F'/' '{print $NF}' | cut -d '.' -f 5)
+
+		echo "• OK, Projekt $projekt: $projektname ausgewählt."
+
+#	                 ██  ██      ██████ 
+#	                ████████          ██
+#	█████ █████      ██  ██       █████ 
+#	                ████████     ██     
+#	                 ██  ██      ███████
+
+		echo ""
+		echo "1 - Video erstellen"
+		echo "2 - Projekt löschen"
+		echo ""
+		read -p "Auswahl: " auswahl
+
+#	                 ██  ██      ██████      ██     ██     ██    ██ ██ ██████  
+#	                ████████          ██    ███    ███     ██    ██ ██ ██   ██ 
+#	█████ █████      ██  ██       █████      ██     ██     ██    ██ ██ ██   ██ 
+#	                ████████     ██          ██     ██      ██  ██  ██ ██   ██ 
+#	                 ██  ██      ███████ ██  ██ ██  ██       ████   ██ ██████  
+
+		if [ "$auswahl" = "1" ]; then
+			echo "• Video Creator"
+			echo ""
+			echo "Projektname: $projektname"
+			echo "Anzahl Bilder: $bildanzahl"
+			echo ""
+			read -p "Wieviel FPS (Frames per Second) soll das Video haben?: " fps
+			echo "$fps FPS."
+			echo ""
+
+			# Datei heißt: 2403261216.......jpg
+			# Extrahiere den Zeitstempel der ersten Datei
+			erste_datei=$(ls $pfad/$projekt* | head -n 1)
+			v_jahr=$(echo $erste_datei | cut -b 1-2)
+			v_monat=$(echo $erste_datei | cut -b 3-4)
+			v_tag=$(echo $erste_datei | cut -b 5-6)
+
+			# Extrahiere den Zeitstempel der letzten Datei
+			letzte_datei=$(ls -r $pfad/$projekt* | head -n 1)
+			b_jahr=$(echo $letzte_datei | cut -b 1-2)
+			b_monat=$(echo $letzte_datei | cut -b 3-4)
+			b_tag=$(echo $letzte_datei | cut -b 5-6)
+
+			# Erstelle das gewünschte Format
+#			von="$v_jahr-$v_monat-$v_tag"
+#			bis="$b_jahr-$b_monat-$b_tag"
+			von="$v_tag.$v_monat.$v_jahr"
+			bis="$b_tag.$b_monat.$b_jahr"
+
+			echo "- ZUSAMMENFASSUNG -"
+			echo ""
+			echo "ID:            $projekt"
+			echo "Name:          $projektname"
+			echo "Bilderanzahl:  $bildanzahl"
+			echo "FPS:           $fps"
+			echo "Videolänge:    $(($bildanzahl / $fps)) Sekunden"
+
+			if [ "$von" = "$bis" ]; then
+				echo "Aufnahmedatum: $von"
+			else
+				echo "Aufnahmedatum: $von bis $bis"
 			fi
 
-			echo "Projekt-Ordner erfolgreich in ein .tar-Archiv gepackt."
-		else
-			tar -cpf "$bilder/Bilder komplett - $zeitstempel.tar" $bilder/*	# wenn ALLE und TAR
 			echo ""
-			echo "alle;Archiv;$(date +"%d.%m.%Y;%H:%M");$anzahl;TAR;;;$name" >> "$data/Protokoll.csv"
-			echo "Alle Projekte erfolgreich in ein .tar-Archiv gepackt."
-		fi
-	elif [ "$archivnr" = "2" ]; then
-		echo "Okay, zip."
-		echo "Bitte warten..."
-		if [ ! "$sid" = "alle" ]; then	# wenn SID und ZIP
-			zip -r "$bilder/Bilder $sid - $name - $zeitstempel ($anzahl Stk).zip" $bilder/$sid*
 			echo ""
-			echo "$sid;Archiv;$(date +"%d.%m.%Y;%H:%M");$anzahl;ZIP;;;$name" >> "$data/Protokoll.csv"
-
-			if [ -f $bilder/Bilder\ $sid\ -*.zip ]; then
-				rm -r $bilder/$sid\ -*
-			fi
-
-			echo "Projekt-Ordner erfolgreich in ein .zip-Archiv gepackt."
-		else
-			zip -r "$bilder/Bilder komplett - $zeitstempel.zip" $bilder/*	# wenn ALLE und ZIP
+			read -p "OK? >> ENTER" null
 			echo ""
-			echo "alle;Archiv;$(date +"%d.%m.%Y;%H:%M");$anzahl;ZIP;;;$name" >> "$data/Protokoll.csv"
-			echo "Alle Projekte erfolgreich in ein .zip-Archiv gepackt."
-		fi
-	fi
-fi
-
-#							8b           d8  88  88888888ba,    88888888888  ,ad8888ba,  
-#							`8b         d8'  88  88      `"8b   88          d8"'    `"8b 
-#							 `8b       d8'   88  88        `8b  88         d8'        `8b
-#							  `8b     d8'    88  88         88  88aaaaa    88          88
-#							   `8b   d8'     88  88         88  88"""""    88          88
-#							    `8b d8'      88  88         8P  88         Y8,        ,8P
-#							     `888'       88  88      .a8P   88          Y8a.    .a8P 
-#							      `8'        88  88888888Y"'    88888888888  `"Y8888Y"'
-
-if [ "$1" = "video" ]; then
-	intro
-	echo "Video Creator"
-	echo ""
-	echo ""
-	if [ "$aktiv" = "0" ]; then
-		echo "Es ist nichts vorhanden,"
-		echo "von was möchtest du ein Video erstellen?"
-		echo ""
-		echo "Bitte zuerst ein Projekt starten!"
-		echo ""
-		echo "Fehler, Abbruch."
-		sleep 3
-		exit
-	fi
-	echo "Mit welcher Projekt-ID willst Du ein Video erstellen?"
-	read -p "Deine Eingabe: " sid
-	if [ -f $bilder/Video\ $sid* ]; then
-		echo ""
-		echo "Die ID wurde bereits visualisiert,"
-		echo "willst du die Datei mit einem anderen FPS - Wert nochmal starten?"
-		read -p "ENTER für ja oder 'nein' für nein: " uberschreiben
-		if [ ! -z "$uberschreiben" ]; then
-			echo ""
-			echo "Okay, Abbruch."
+			echo "Okay, Projekt $projekt - $projektname wird visualisiert. Bitte warten..."
 			sleep 3
-			exit
+
+			if [ "$von" = "$bis" ]; then
+				cat $pfad/$projekt*/*.jpg | ffmpeg -f image2pipe -r $fps -hide_banner -framerate 1 -i - -vcodec libx264 "$pfad/Video $projekt - $projektname - $von (${bildanzahl}Stk - ${fps}fps - $(($bildanzahl / $fps))s).mp4"
+			else
+				cat $pfad/$projekt*/*.jpg | ffmpeg -f image2pipe -r $fps -hide_banner -framerate 1 -i - -vcodec libx264 "$pfad/Video $projekt - $projektname - $von bis $bis (${bildanzahl}Stk - ${fps}fps - $(($bildanzahl / $fps))s).mp4"
+			fi
+
+			echo ""
+			echo "Projekt $projekt mit dem Namen $projektname wurde visualisiert."
+			echo ""
+			echo "Projekt abschließen? Falls nein, kann das Video überarbeitet / neu erstellt werden."
+			read -p "Projekt abschließen? Ja/nein: " auswahl
+
+			auswahl2=$(echo "$auswahl" | sed 's/.*/\L&/')
+
+			if [ "$auswahl2" = "ja" ]; then
+				rm $data/.$projekt*.fertig
+				rm -r $pfad/$projekt*
+			else
+				echo ""
+				echo "Projekt nicht abgeschlossen."
+				echo "Vorgang kann wiederholt werden, um den FPS-Wert fürs Video anzupassen."
+			fi
+
+			echo ""
+			echo "Fertig."
+			exit 0
+
+#	                 ██  ██      ██████      ██    ██████  		██████  ███████ ██      
+#	                ████████          ██    ███         ██ 		██   ██ ██      ██      
+#	█████ █████      ██  ██       █████      ██     █████  		██   ██ █████   ██      
+#	                ████████     ██          ██    ██      		██   ██ ██      ██      
+#	                 ██  ██      ███████ ██  ██ ██ ███████ 		██████  ███████ ███████ 
+
+		elif [ "$auswahl" = "2" ]; then
+			echo "• Projekt löschen"
+			echo ""
+			read -p "Wirklich löschen? Ja oder nein: " auswahl
+
+			auswahl2=$(echo "$auswahl" | sed 's/.*/\L&/')
+
+			if [ "$auswahl2" = "ja" ]; then
+				rm $data/.$projekt*.fertig
+				find "$pfad" -type d -name $projekt* -exec rm -r {} +
+				
+				echo "Projekt $projekt gelöscht."
+				exit 0
+			fi
+
+			if [ -z "$auswahl" ]; then
+				echo "Weder ja noch nein ausgewählt, nichts passiert."
+			    exit 0
+            fi
 		fi
 	fi
 
-	find $bilder/$sid* -type f -name *.jpg -size 0c -exec rm {} \;
+#	                 ██  ██       ██    ██████  	 █████  ██████  ███████  ██████ ██   ██ ██      
+#	                ████████     ███         ██ 	██   ██ ██   ██ ██      ██      ██   ██ ██      
+#	█████ █████      ██  ██       ██     █████  	███████ ██████  ███████ ██      ███████ ██      
+#	                ████████      ██         ██ 	██   ██ ██   ██      ██ ██      ██   ██ ██      
+#	                 ██  ██       ██ ██ ██████  	██   ██ ██████  ███████  ██████ ██   ██ ███████ 
 
-	anzahl=$(find $bilder/$sid* -type f | wc -l)
-	name=$(ls "$bilder" | grep "$sid - " | cut -d ' ' -f 3- | sed "s: (.*::" | head -n1 | tail -n1)
+	if [ "$auswahl" = "3" ]; then
+		clear
+		echo "W E B C A M L O A D E R"
+		echo ""
+		echo ""
+		echo "Menü 3.1: Projekt abschließen"
+		echo ""
+		echo "Ist ein Projekt abgebrochen, oder in jedem Fall nicht automatisch erfolgreich abgeschlossen worden,"
+		echo "wird es natürlich nicht als \"fertig\" gekennzeichnet."
+		echo "Um diesen Status dennoch zu erreichen, damit weitere Aktionen möglich sind, wie ein Video erstellen,"
+		echo "kann hier das Projekt manuell abgeschlossen werden."
+		echo "Es wird dann der abgebrochene Stand bei den Bildern berückstichtigt, nicht der Soll-Bilder-Wert."
+		echo ""
+		echo ""
 
-	v_jahr=$(ls -r $bilder/$sid* | tail -n 1 | cut -b 1-4)
-	v_monat=$(ls -r $bilder/$sid* | tail -n 1 | cut -b 5-6)
-	v_tag=$(ls -r $bilder/$sid* | tail -n 1 | cut -b 7-8)
+		# Liste der Dateien im Verzeichnis abrufen
+		file_list=$(find "$data" -maxdepth 1 -type f -name *.incomplete 2>/dev/null)
 
-	b_jahr=$(ls $bilder/$sid* | tail -n 1 | cut -b 1-4)
-	b_monat=$(ls $bilder/$sid* | tail -n 1 | cut -b 5-6)
-	b_tag=$(ls $bilder/$sid* | tail -n 1 | cut -b 7-8)
+		# Überprüfen, ob Dateien gefunden wurden
+		if [ -n "$file_list" ]; then
 
-	von="$v_jahr-$v_monat-$v_tag"
-	bis="$b_jahr-$b_monat-$b_tag"
+			# Schleife über die Dateien
+			for file in $file_list; do
 
-	echo ""
-	echo "Name:		$name"
-	echo "Bildanzahl: 	$anzahl"
-	echo ""
-	echo "Wieviele Bilder pro Sekunde (FPS)?"
-	read -p "Deine Eingabe: " rfps
-	intro
-	echo "- ZUSAMMENFASSUNG -"
-	echo ""
-	echo "ID:		$sid"
-	echo "Name:		$name"
-	echo "Bilderanzahl:	$anzahl"
-	echo "FPS:		$rfps"
-	echo "Videolänge:	$(($anzahl / $rfps)) Sekunden"
-	if [ "$von" = "$bis" ]; then
-		echo "Aufnahmedatum:	$von"
-	else
-		echo "Aufnahmedatum:	$von bis $bis"
+				# Projektnummer und Projektnamen extrahieren
+				projektnummer=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 2)
+				projektname=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 3 | sed 's/_/ /g')
+				bildanzahl_theo=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 4)
+				bildanzahl_real=$(find $pfad/$projektnummer* -type f -name *.jpg | wc -l)
+				pause=$(echo "$file" | awk -F'/' '{print $NF}' | cut -d '.' -f 5)
+
+				echo "$projektnummer - $projektname - Bildanzahl: $bildanzahl_real - Pause: $pause"
+			done
+		else
+			echo "Keine unvollständigen Projekte gefunden."
+			exit 0
+		fi
+
+		echo ""
+		read -p "Projektnummer zur weiteren Bearbeitung: " projekt
+		
+		echo "• OK, Projekt $projekt ausgewählt."
+
+		echo ""
+		echo "Projekt wird abgeschlossen..."
+
+		nameneu=$(echo "$projektname" | sed 's/ /_/g')
+
+		echo "Fehler im Programm, es wird hier unterbrochen."
+		exit 1
+		
+		mv $data/.$projekt.*.incomplete "$data/.$projekt.$nameneu.$bildanzahl_real.$pause.fertig"
+
+		dat_org="$pfad/$projekt - $projektname (${bildanzahl_theo}Stk - ${pause}s)"
+		dat_mod="$pfad/$projekt - $projektname (${bildanzahl_real}Stk - ${pause}s)"
+
+		if [ ! "$dat_org" = "$dat_mod" ]; then
+			mv "$dat_org" "$dat_mod"
+		fi
+
+		echo "Fertig."
+		exit 0
 	fi
-	echo ""
-	echo ""
-	read -p "OK? >> ENTER" null
-	echo ""
-	echo "Okay, Projekt-ID $sid wird visualisiert."
-	sleep 5
 
-	if [ "$von" = "$bis" ]; then
-		cat $bilder/$sid*/*.jpg | ffmpeg -f image2pipe -r $rfps -hide_banner -framerate 1 -i - -vcodec libx264 "$bilder/Video $sid - $name - $von (${anzahl}Stk - ${rfps}fps - $(($anzahl / $rfps))s).mp4"
-	else
-		cat $bilder/$sid*/*.jpg | ffmpeg -f image2pipe -r $rfps -hide_banner -framerate 1 -i - -vcodec libx264 "$bilder/Video $sid - $name - $von bis $bis (${anzahl}Stk - ${rfps}fps - $(($anzahl / $rfps))s).mp4"
-	fi
-
-	echo "$sid;Video;$(date +"%d.%m.%Y;%H:%M");$anzahl;;$(($anzahl / $rfps));$rfps;$name" >> "$data/Protokoll.csv"
-
-	if [ -f "$bilder/$sid fertig" ]; then # kann mit der Zeit weg
-		rm "$bilder/$sid fertig"
-	fi
+	exit 0
 fi
 
-### SPECIALS ###
-
-if [ "$1" = "video" ] && [ "$2" = "martin" ]; then
-	echo "Verschiebe..."
-	mv $bilder/*Moatl*.mp4 "/srv/hdd/Martin/"
-	echo "Rechte..."
-	sudo chown -R martin:martin "/srv/hdd/Martin"
-fi
+exit 0
