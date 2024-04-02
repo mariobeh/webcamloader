@@ -1,6 +1,8 @@
+# Webcamloader
+
 (Linux Debian/Ubuntu) - Terminal/Server
 
-Der Webcamloader ist ein Script, welches von Webcams egal welcher Art Bilder speichert. Weitergehend lässt sich damit ein Timelapse-Video erstellen.
+**Der Webcamloader** ist ein Script, welches von Webcams egal welcher Art Bilder speichert. Weitergehend lässt sich damit ein Timelapse-Video erstellen.
 Es ist ein Menü vorhanden, ein normaler/geführter Modus und einen Quicky-Modus, der nach Eingabe der Variablen sofort mit der Arbeit beginnt.
 Der Webcamloader schreibt jede Handlung einer Kamera, die gedownloaded wird, in ein Projekt.
 Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
