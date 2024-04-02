@@ -9,22 +9,14 @@ Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
 
 Es ist auf IDs aufgebaut, statt auf Namen. Jedes Ausführen mit Download wird in einer Projekt-ID, beginnend mit 100, gespeichert.
 
-Beim blanken Aufruf via ./webcamloader.sh erscheint folgende Hauptmenü-Struktur:
-
-```
-Willkommen! ••• Menü.
-
-1 - Geführter Modus
-2 - Fertige Projekte
-3 - Projekt abschließen
-```
+Beim blanken Aufruf via ./webcamloader.sh erscheint ein Hauptmenü. Dort lässt sich der geführte Modus starten, sowie fertige Projekte betrachten oder abgebrochene Projekte abschließen.
 
 Im Geführtem Modus sammelt das Script notwendige Informationen wie Kamera-URL, Name, Bildanzahl, Pause zwischen den Bildern und optional eine E-Mail-Adresse zur Benachrichtigung wenn das Projekt beendet ist.
 Anschließend wird eine Informationstafel gezeigt, wie lange das Projekt theoretisch dauert und wie groß es sein wird. Außerdem wird geprüft, ob die Kamera Bilder liefert oder es ein Videostream ist. Dies wird wie folgt zusammengefasst:
 
 ```
 Projekt-ID:   163
-Projekt-Name: Wetterkamera
+Projekt-Name: Name
 Anzahl:       7000
 Pause:        60
 E-Mail:       max.mustermann@freenet.de
@@ -48,7 +40,7 @@ Jetzt beginnt der Webcamloader mit dem Download bis die gewünschte Bildanzahl e
 W E B C A M L O A D E R
 
 
-PROJEKT: 163 - Wetterkamera - Pause: 60s
+PROJEKT: 163 - Name - Pause: 60s
 Theoretisch fertig: am 06.04.24 um 16:11 Uhr.
 
 02.04.24 18:36:27 :: Bild 3603 von 7000 wird erstellt...
@@ -75,9 +67,6 @@ Auf diese Weise lässt sich mit Hilfe von [ffmpeg], welches auf dem System insta
 Es wird dann nach den FPS gefragt und es gibt auch hier wieder eine Zusammenfassung mit Aufnahmedatum und theoretischer Länge des Videos.
 
 ```
-Wieviel FPS (Frames per Second) soll das Video haben?: 2
-2 FPS.
-
 - ZUSAMMENFASSUNG -
 
 ID:            188
@@ -92,9 +81,15 @@ OK? >> ENTER
 ```
 
 **Der Quicky-Modus** beinhaltet eine vom Anwender selbstständige, nicht geführte Eingabe aller relevanten Angaben. Dies erfolgt direkt beim Aufruf des Scripts in Form von Variablen.
+
+```
 ./webcamloader.sh quicky URL "Name" Bildanzahl Pause E-Mail
+```
+
 Bitte beachten, dass jede mit Leerzeichen getrennte Eingabe eine eigene Variabel ist. Sollte der Name Leerzeichen enthalten, so ist dieser in Anführungszeichen zu setzen. In diesem Fall ist beginnend mit $2 die URL einzugeben, in $3 den Namen, in $4 die Bildanzahl und in $5 die Pause zwischen den Bildern in Sekunden.
 Nach Start erscheint eine abschließende Abfrage und es wird die theoretische Download-Dauer und die theoretische, fertige Größe des Projekts errechnet. Bestätigt man diese, beginnt das Script mit dem Download. Mit Erreichen der Bildanzahl endet auch hier das Programm automatisch.
+
+Falls Projekte fehlschlagen oder gestoppt werden, lässt sich das Projekt manuell abschließen. Normalerweise wird die SOLL-Bildanzahl gesetzt. Bei Abbruch und manuellen Abschluss des Projekt wird die IST-Bildanzahl gesetzt.
 
 Mit integriertem Updater, der bei neuerer Version auf dem Server via _public.mariobeh.de_ direkt die Bash-File mit der neuen automatisch ersetzt.
 
