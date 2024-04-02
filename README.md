@@ -9,6 +9,8 @@ Es wird empfohlen, die Projekte in einer [screen]-Session zu starten.
 
 Es ist auf IDs aufgebaut, statt auf Namen. Jedes Ausführen mit Download wird in einer Projekt-ID, beginnend mit 100, gespeichert.
 
+Es wird dringend empfohlen, dass das ausführende System in der Lage ist, E-Mails zu versenden. Außerdem werden folgende Pakete benötigt: _ffmpeg_ und optional _screen_.
+
 Beim blanken Aufruf via ./webcamloader.sh erscheint ein Hauptmenü. Dort lässt sich der geführte Modus starten, sowie fertige Projekte betrachten oder abgebrochene Projekte abschließen.
 
 Im Geführtem Modus sammelt das Script notwendige Informationen wie Kamera-URL, Name, Bildanzahl, Pause zwischen den Bildern und optional eine E-Mail-Adresse zur Benachrichtigung wenn das Projekt beendet ist.
