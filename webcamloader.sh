@@ -8,7 +8,7 @@
 
 # Updater & Reverse Updater BEGINN
 if [ "$1" = "update" ]; then
-	scriptversion=2404021749
+	scriptversion=2404052123
 	scriptname=$(basename "$0")
 	serverping="public.mariobeh.de"
 	web_ver="https://public.mariobeh.de/prv/scripte/$scriptname-version.txt"
@@ -363,14 +363,14 @@ function arbeit {
 	read -p "Download starten? >> ENTER " null
 
 	#erstelle LOG-Datei
-	echo "Projekt-ID: $projekt" >> "$data/exec-log/$projekt.txt"
-	echo "Kamera-URL: $2" >> "$data/exec-log/$projekt.txt"
-	echo "Projektname: $3 ($projektname)" >> "$data/exec-log/$projekt.txt"
-	echo "Bildanzahl: $4" >> "$data/exec-log/$projekt.txt"
-	echo "Pause: $5" >> "$data/exec-log/$projekt.txt"
-	echo "Theoretisches Ende: $fertig" >> "$data/exec-log/$projekt.txt"
-	echo "E-Mail: $6" >> "$data/exec-log/$projekt.txt"
-	echo "" >> "$data/exec-log/$projekt.txt"
+	echo "Projekt-ID: $projekt" >> "$data/exec-log/$projekt - $3.txt"
+	echo "Kamera-URL: $2" >> "$data/exec-log/$projekt - $3.txt"
+	echo "Projektname: $3 ($projektname)" >> "$data/exec-log/$projekt - $3.txt"
+	echo "Bildanzahl: $4" >> "$data/exec-log/$projekt - $3.txt"
+	echo "Pause: $5" >> "$data/exec-log/$projekt - $3.txt"
+	echo "Theoretisches Ende: $fertig" >> "$data/exec-log/$projekt - $3.txt"
+	echo "E-Mail: $6" >> "$data/exec-log/$projekt - $3.txt"
+	echo "" >> "$data/exec-log/$projekt - $3.txt"
 
 	#ersetze Leerzeichen gegen Unterstriche und setze incomplete-Datei
 	nameneu=$(echo "$projektname" | sed 's/ /_/g')
@@ -399,7 +399,7 @@ function arbeit {
 			#Ausgabe
 			echo "$(date +"%d.%m.%y %H:%M:%S") :: Kamera offline? Prüfe erneut nach $offwarten Sekunden..."
 			#Protokolliere
-			echo "$(date +"%d.%m.%y %H:%M:%S") :: Kamera offline" >> "$data/exec-log/$projekt.txt"
+			echo "$(date +"%d.%m.%y %H:%M:%S") :: Kamera offline" >> "$data/exec-log/$projekt - $3.txt"
 			sleep "$offwarten"
 		done
 	
@@ -413,7 +413,7 @@ function arbeit {
 		#Ausgabe
 		echo "$(date +"%d.%m.%y %H:%M:%S") :: Bild $x von $4 wird erstellt..."
 		#Protokolliere
-		echo "$(date +"%d.%m.%y %H:%M:%S") :: Bild $x / $4" >> "$data/exec-log/$projekt.txt"
+		echo "$(date +"%d.%m.%y %H:%M:%S") :: Bild $x / $4" >> "$data/exec-log/$projekt - $3.txt"
 
 		if [ "$video" = "1" ]; then
 			ffmpeg -y -i "$2" -loglevel quiet -nostats -hide_banner -vframes 1 "$pfad/$projekt - $projektname (${4}Stk - ${5}s)/$(date +"%y%m%d%H%M%S - $projektname - $x von $4 (${5}s).jpg")" > "/dev/null"
@@ -502,9 +502,10 @@ elif [ "$1" = "quicky" ] && [ -z "$5" ]; then
 	echo "Fehler, für den Quicky-Modus fehlt mindestens ein Argument."
 	echo "Info:"
 	echo "$0 quicky Kamera-URL Projekt-Name Gesamtbilder Pause"
-	echo "$0 quicky http://172.16.20.36:8084/snapshot.cgi \"Haus 2\" 5000 10"
+	echo "$0 quicky \"http://172.22.20.36:8000/snapshot.cgi\" \"Alpenpanorama\" 5000 10"
 	echo ""
-	echo "Darauf achten: Leerzeichen trennt, ist im Namen ein Leerzeichen enthalten, unbedingt mit \" \" arbeiten!"
+	echo "Darauf achten: Leerzeichen trennt - ist im Namen ein Leerzeichen enthalten, unbedingt mit \" \" arbeiten!"
+	echo "Dasselbe gilt bei der Kamera-URL. Sind hier Zeichen wie ein \"&\", muss ebenfalls mit \" \" gearbeitet werden!"
 	echo ""
 	echo "Hinweis:"
 	echo "\$1 = quicky"
@@ -512,7 +513,7 @@ elif [ "$1" = "quicky" ] && [ -z "$5" ]; then
 	echo "\$3 = Name des Projekts"
 	echo "\$4 = Bildanzahl"
 	echo "\$5 = Pause zwischen Bildern"
-	echo "\$6 = E-Mail-Adresse zum Benachrichtigen wenn Projekt fertig (OPTIONAL!)"
+	echo "\$6 = E-Mail-Adresse zum Benachrichtigen wenn Projekt fertig (optional)"
 	exit 1
 fi
 
@@ -570,20 +571,57 @@ if [ -z "$1" ]; then
 		echo ""
 		echo ""
 
-		read -p "Kamera-URL: " url
-		#Prüfung?
+		# URL Abfrage mit Prüfung
+		while true; do
+		    read -p "Kamera-URL: " url
+		    if [[ -n $url && $url =~ ^(http|https):// ]]; then
+		        break
+		    else
+		        echo "URL ungültig, bitte nochmal eingeben."
+		    fi
+		done
 
-		read -p "Name des Projekts: " name
-		#Prüfung?
+		# Name Abfrage mit Prüfung
+		while true; do
+		    read -p "Name des Projekts: " name
+		    if [[ -n $name ]]; then
+		        break
+		    else
+		        echo "Name darf nicht leer sein."
+		    fi
+		done
 
-		read -p "Wie viele Bilder insgesamt: " anzahl
-		#Prüfung?
+		# Anzahl Abfrage mit Prüfung
+		while true; do
+		    read -p "Wie viele Bilder insgesamt: " anzahl
+		    if [[ $anzahl =~ ^[1-9][0-9]*$ && $anzahl -ge 1 && $anzahl -le 14000 ]]; then
+		        break
+		    else
+		        echo "Bildanzahl ungültig. Bitte eine Bildanzahl bis max. 14000 eingeben."
+		    fi
+		done
 
-		read -p "Pause zwischen Bildern: " pause
-		#Prüfung?
+		# Pause Abfrage mit Prüfung
+		while true; do
+		    read -p "Pause zwischen Bildern: " pause
+		    if [[ $pause =~ ^[0-9]+$ && -n $pause ]]; then
+		        break
+		    else
+		        echo "Pause ungültig. Bitte geben Sie eine Zahl ein."
+		    fi
+		done
 
-		read -p "Soll eine E-Mail bei Fertigstellung gesendet werden? Falls ja, E-Mail-Adresse, falls nein, leer lassen: " email
-		#Prüfung?
+		# E-Mail Abfrage mit Prüfung
+		while true; do
+		    read -p "Soll eine E-Mail bei Fertigstellung gesendet werden? Falls ja, E-Mail-Adresse, falls nein, leer lassen: " email
+		    if [[ -z $email ]]; then
+		        break
+		    elif [[ $email =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+		        break
+		    else
+		        echo "E-Mail-Adresse ungültig. Bitte eine gültige E-Mail-Adresse eingeben oder leerlassen (optional)."
+		    fi
+		done
 
 #		arbeit "$1"     "$2"   "$3"    " $4"     "$5"     "$6"
 		arbeit "menu" "$url" "$name" "$anzahl" "$pause" "$email"
@@ -707,6 +745,9 @@ if [ -z "$1" ]; then
 			else
 				cat $pfad/$projekt*/*.jpg | ffmpeg -f image2pipe -r $fps -hide_banner -framerate 1 -i - -vcodec libx264 "$pfad/Video $projekt - $projektname - $von bis $bis (${bildanzahl}Stk - ${fps}fps - $(($bildanzahl / $fps))s).mp4"
 			fi
+
+			# Protokolliere ins LOG
+			echo "$(date +"%d.%m.%y %H:%M:%S") :: VIDEO ERSTELLT - FPS: $fps" >> "$data/exec-log/$projekt - $3.txt"
 
 			echo ""
 			echo "Projekt $projekt mit dem Namen $projektname wurde visualisiert."
