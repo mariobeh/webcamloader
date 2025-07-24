@@ -51,27 +51,27 @@ Der Menümodus ist somit der flexibelste und komfortabelste Weg, ein Zeitraffer-
 ## Quicky-Modus
 Der Quicky-Modus ist gedacht für schnelles Beginnen eines Projekts. Nach Übergabe aller erforderlichen Parameter erhält man eine Zusammenfassung mit Berechnung der Aufnahmedauer und kann mit ENTER das Projekt beginnen.
 
-Aufruf: ./webcamloader.sh quicky -u <URL> -n <Name> -b <Anzahl> -i <Intervall> -e <E-Mail> -f <Funktion> -t <Zeitfenster>
+Aufruf: ./webcamloader.sh quicky -u `<URL>` -n `<Name>` -b `<Anzahl>` -i `<Intervall>` -e `<E-Mail>` -f `<Funktion>` -t `<Zeitfenster>`
 
-Parameter im Einzelnen:
--u = Kamera URL komplett mit http(s).
--n = Projektname. Freier Name für das Projekt.
--b = Bilderanzahl für das Gesamtprojekt.
--i = Intervall für die Pausenzeiten zwischen den Bilderdownloads.
--e = E-Mail für die Benachrichtigung (optional).
--f = Funktion/Ausführung - 0 oder 1 (optional).
--t = Zeitfenster im Format 8-18 (optional).
+### Parameter im Einzelnen:
+- `-u` = Kamera-URL (http/https)
+- `-n` = Projektname
+- `-b` = Gesamtanzahl der Bilder
+- `-i` = Intervall zwischen Aufnahmen
+- `-e` = E-Mail zur Benachrichtigung (optional)
+- `-f` = Funktionsmodus (0 = Hintergrund, 1 = Vordergrund) (optional)
+- `-t` = Zeitfenster, z. B. `8-18` (optional)
 
 ## Cron-Modus
 Der Cron-Modus ist ein Einmalaufruf, bei dem genau ein Bild gespeichert wird. Dieser ist gedacht für Langzeitaufnahmen mit Bild einmal am Tag per Crontab. Dabei können auch Folgebilder gesetzt werden. Dies ist sinnvoll, wenn der Cron-Befehl um 12:00 Uhr losgeht aber man nochmal ein Bild um 16:00 Uhr haben möchte. Klar könnte man den Crontab als 12,16 kennzeichnen - man könnte hier auch 2 Bilder definieren im Abstand von 4 Stunden. Ist Geschmackssache.
 
-Aufruf: ./webcamloader.sh cron -u <URL> -n <Name> -x <Anzahl> -y <Intervall>
+Aufruf: ./webcamloader.sh cron -u `<URL>` -n `<Name>` -x `<Anzahl>` -y `<Intervall>`
 
 Parameter im Einzelnen:
--u = Kamera URL komplett mit http(s).
--n = Projektname. Freier Name für das Projekt.
--x = Folgebilder (optional).
--y = Intervall (optional).
+- `-u` = Kamera URL komplett mit http(s).
+- `-n` = Projektname. Freier Name für das Projekt.
+- `-x` = Folgebilder (optional).
+- `-y` = Intervall (optional).
 
 # Videoerstellung
 ## Geführter Modus
