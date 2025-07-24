@@ -82,11 +82,9 @@ Im oben erwähnten Menü zur Bilderstellung ist die Videoerstellung ebenfalls ei
 # Script Download
 Das Programm kann hier in immer der neuesten Version heruntergeladen und sich zunutze machen:
 
-Webcamloader Script (via mariobeh.de)
-Webcamloader auf Github
-Nur in Deutsch verfügbar, Umbau auf anderen Sprachen auf Anfrage. In diesem Falle werden alle Ausgaben (echo) in eine Sprachen-Datei extrahiert und es wird so ermöglicht, unbegrenzte Sprachen zu integrieren.
+[Webcamloader Script](https://public.mariobeh.de/scripts/webcamloader.sh) (via mariobeh.de)
 
-https://wiki.mariobeh.de/link/54#bkmrk-vielen-dank%2C%C2%A0mariobe
+Nur in Deutsch verfügbar, Umbau auf anderen Sprachen auf Anfrage. In diesem Falle werden alle Ausgaben (echo) in eine Sprachen-Datei extrahiert und es wird so ermöglicht, unbegrenzte Sprachen zu integrieren.
  
 Vielen Dank, 
 mariobeh.
