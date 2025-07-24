@@ -78,12 +78,6 @@ Parameter im Einzelnen:
 Im oben erwähnten Menü zur Bilderstellung ist die Videoerstellung ebenfalls ein Punkt davon. Darüber lassen sich mit fertigen, abgeschlossenen Projekten ein Video erstellen. Im geführten Ablauf wird zunächst die gewünschte Bildrate (FPS – Frames per Second) abgefragt. Danach folgt eine Zusammenfassung aller relevanten Angaben zur Kontrolle. Da FPS und Bildanzahl maßgeblich die Videolänge beeinflussen, sollte hier sorgfältig geprüft werden. Dieses landet dann ebenfalls im Medienverzeichnis, parallel zu den Bildern. Ist das Video fertig, kann man das Projekt abschließen oder die FPS erneut mit anderem Wert setzen, sollte das Ergebnis des Videos nicht befriedigend sein. Wird das Projekt abgeschlossen, wird das rohe Projekt, also die Bilder als solches, gelöscht. Das Video bleibt selbstverständlich erhalten.
 
 
-
-# Script Download
-Das Programm kann hier in immer der neuesten Version heruntergeladen und sich zunutze machen:
-
-[Webcamloader Script](https://public.mariobeh.de/scripts/webcamloader.sh) (via mariobeh.de)
-
 Nur in Deutsch verfügbar, Umbau auf anderen Sprachen auf Anfrage. In diesem Falle werden alle Ausgaben (echo) in eine Sprachen-Datei extrahiert und es wird so ermöglicht, unbegrenzte Sprachen zu integrieren.
  
 Vielen Dank, 
